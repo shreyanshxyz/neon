@@ -38,6 +38,12 @@ declare global {
       getIndexingStatus: () => Promise<boolean>;
       onIndexingComplete: (callback: () => void) => void;
       onIndexingError: (callback: (error: string) => void) => void;
+      onIndexingProgress: (
+        callback: (
+          _event: any,
+          progress: { processed: number; total: number }
+        ) => void
+      ) => void;
     };
   }
 }
@@ -50,6 +56,7 @@ function App(): JSX.Element {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [treeData, setTreeData] = useState<FileItem[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("browser");
+  const [isIndexing, setIsIndexing] = useState<boolean>(false);
 
   const handleFolderSelect = async (folder: FileItem): Promise<void> => {
     setSelectedFolder(folder);
@@ -64,6 +71,22 @@ function App(): JSX.Element {
 
   useEffect(() => {
     initializeFileTree();
+  }, []);
+
+  useEffect(() => {
+    const handleIndexingComplete = () => {
+      setIsIndexing(false);
+    };
+
+    const handleIndexingError = (error: string) => {
+      console.error("Indexing error:", error);
+      setIsIndexing(false);
+    };
+
+    window.electronAPI.onIndexingComplete(handleIndexingComplete);
+    window.electronAPI.onIndexingError(handleIndexingError);
+
+    window.electronAPI.getIndexingStatus().then(setIsIndexing);
   }, []);
 
   const initializeFileTree = async (): Promise<void> => {
@@ -187,7 +210,7 @@ function App(): JSX.Element {
           </>
         ) : (
           <main className="main-content-full">
-            <GlobalSearch onFileOpen={handleFileOpen} />
+            <GlobalSearch onFileOpen={handleFileOpen} isIndexing={isIndexing} />
           </main>
         )}
       </div>
