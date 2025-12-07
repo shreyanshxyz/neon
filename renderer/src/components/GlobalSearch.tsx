@@ -11,13 +11,16 @@ interface SearchResult {
 
 interface GlobalSearchProps {
   onFileOpen: (filePath: string) => void;
+  isIndexing: boolean;
 }
 
-function GlobalSearch({ onFileOpen }: GlobalSearchProps): JSX.Element {
+function GlobalSearch({
+  onFileOpen,
+  isIndexing,
+}: GlobalSearchProps): JSX.Element {
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isIndexing, setIsIndexing] = useState<boolean>(false);
   const [indexLoaded, setIndexLoaded] = useState<boolean>(false);
   const [indexingProgress, setIndexingProgress] = useState<{
     processed: number;
@@ -29,12 +32,6 @@ function GlobalSearch({ onFileOpen }: GlobalSearchProps): JSX.Element {
       try {
         const loaded = await window.electronAPI.loadSearchIndex();
         setIndexLoaded(loaded);
-
-        if (!loaded) {
-          const homeDir = await window.electronAPI.getHomeDirectory();
-          setIsIndexing(true);
-          await window.electronAPI.buildSearchIndex([homeDir]);
-        }
       } catch (error) {
         console.error("Failed to initialize search:", error);
       }
@@ -47,34 +44,24 @@ function GlobalSearch({ onFileOpen }: GlobalSearchProps): JSX.Element {
       progress: { processed: number; total: number }
     ) => {
       setIndexingProgress(progress);
+      if (!indexLoaded) setIndexLoaded(true);
     };
 
-    const handleComplete = () => {
-      setIsIndexing(false);
-      setIndexLoaded(true);
-      setIndexingProgress(null);
-    };
-
-    const handleError = (error: string) => {
-      console.error("Indexing error:", error);
-      setIsIndexing(false);
-      setIndexingProgress(null);
-    };
-
-    window.electronAPI.onIndexingComplete(handleComplete);
-    window.electronAPI.onIndexingError(handleError);
+    window.electronAPI.onIndexingProgress(handleProgress);
 
     return () => {};
   }, []);
 
   const performSearch = useCallback(
     async (searchQuery: string) => {
-      if (!searchQuery.trim() || !indexLoaded) return;
+      if (!searchQuery.trim()) return;
 
       setIsLoading(true);
       try {
         const searchResults = await window.electronAPI.searchFiles(searchQuery);
         setResults(searchResults);
+        // If we got results, the index must be loaded
+        if (!indexLoaded) setIndexLoaded(true);
       } catch (error) {
         console.error("Search failed:", error);
         setResults([]);
@@ -98,11 +85,9 @@ function GlobalSearch({ onFileOpen }: GlobalSearchProps): JSX.Element {
   const handleBuildIndex = async () => {
     try {
       const homeDir = await window.electronAPI.getHomeDirectory();
-      setIsIndexing(true);
       await window.electronAPI.buildSearchIndex([homeDir]);
     } catch (error) {
       console.error("Failed to build index:", error);
-      setIsIndexing(false);
     }
   };
 
@@ -163,23 +148,28 @@ function GlobalSearch({ onFileOpen }: GlobalSearchProps): JSX.Element {
             <span className="indexing-spinner">⏳</span>
             <div className="indexing-info">
               <span>Building search index...</span>
-              {indexingProgress && (
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${
-                        (indexingProgress.processed / indexingProgress.total) *
-                        100
-                      }%`,
-                    }}
-                  />
-                  <span className="progress-text">
-                    {indexingProgress.processed} / {indexingProgress.total}{" "}
-                    files
-                  </span>
-                </div>
-              )}
+              <div className="progress-bar">
+                {indexingProgress ? (
+                  <>
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${
+                          (indexingProgress.processed /
+                            indexingProgress.total) *
+                          100
+                        }%`,
+                      }}
+                    />
+                    <span className="progress-text">
+                      {indexingProgress.processed} / {indexingProgress.total}{" "}
+                      files
+                    </span>
+                  </>
+                ) : (
+                  <span className="progress-text">Preparing...</span>
+                )}
+              </div>
             </div>
           </div>
         )}
