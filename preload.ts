@@ -31,6 +31,12 @@ interface ElectronAPI {
   getIndexingStatus: () => Promise<boolean>;
   onIndexingComplete: (callback: () => void) => void;
   onIndexingError: (callback: (error: string) => void) => void;
+  onIndexingProgress: (
+    callback: (
+      _event: any,
+      progress: { processed: number; total: number }
+    ) => void
+  ) => void;
 }
 
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -51,5 +57,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   onIndexingError: (callback: (error: string) => void) => {
     ipcRenderer.on("indexing:error", (_, error) => callback(error));
+  },
+  onIndexingProgress: (
+    callback: (progress: { processed: number; total: number }) => void
+  ) => {
+    ipcRenderer.on("indexing:progress", (_, progress) => callback(progress));
   },
 } as ElectronAPI);
