@@ -96,6 +96,7 @@ export function tokenize(text: string): string[] {
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
     .filter((token: string) => token.length > 2)
+    .filter((token: string) => !Object.prototype.hasOwnProperty(token)) // Skip prototype properties
     .filter(
       (token: string, index: number, arr: string[]) =>
         arr.indexOf(token) === index
@@ -104,7 +105,8 @@ export function tokenize(text: string): string[] {
 
 export async function buildIndex(
   rootPaths: string[],
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void,
+  onPartialIndex?: (currentIndex: InvertedIndex) => void
 ): Promise<InvertedIndex> {
   const index: InvertedIndex = {};
   let totalFiles = 0;
@@ -121,6 +123,7 @@ export async function buildIndex(
   console.log(
     `Indexing ${totalFiles} files across ${rootPaths.length} directories`
   );
+
   for (const root of rootPaths) {
     console.log(`Indexing directory: ${root}`);
     let filePaths: string[] = [];
@@ -136,6 +139,7 @@ export async function buildIndex(
       await Promise.all(
         batch.map(async (fp) => {
           if (!shouldIndex(fp)) return;
+
           try {
             const text = await readFileIfText(fp);
             if (!text) return;
@@ -152,6 +156,9 @@ export async function buildIndex(
           processedFiles++;
           if (onProgress && processedFiles % 100 === 0) {
             onProgress(processedFiles, totalFiles);
+            if (onPartialIndex) {
+              onPartialIndex(index);
+            }
           }
         })
       );
@@ -171,8 +178,10 @@ export async function loadIndex(): Promise<InvertedIndex | null> {
     const data = await fs.readFile(INDEX_FILE_PATH, "utf-8");
     const parsed = JSON.parse(data);
     const index: InvertedIndex = {};
-    for (const [term, paths] of Object.entries(parsed)) {
-      index[term] = new Set(paths as string[]);
+    for (const term of Object.keys(parsed)) {
+      if (parsed.hasOwnProperty(term)) {
+        index[term] = new Set(parsed[term] as string[]);
+      }
     }
     return index;
   } catch (error) {
@@ -236,13 +245,14 @@ export async function needsReindex(rootPaths: string[]): Promise<boolean> {
 
 export async function updateIndex(
   rootPaths: string[],
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void,
+  onIndexUpdate?: (currentIndex: InvertedIndex) => void
 ): Promise<InvertedIndex> {
   const existingIndex = (await loadIndex()) || {};
   const metadata = await loadMetadata();
   if (!metadata || (await needsReindex(rootPaths))) {
     console.log("Performing full reindex...");
-    const newIndex = await buildIndex(rootPaths, onProgress);
+    const newIndex = await buildIndex(rootPaths, onProgress, onIndexUpdate);
     const newMetadata: IndexMetadata = {
       lastIndexed: Date.now(),
       fileCount: Array.from(
