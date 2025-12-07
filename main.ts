@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
-import * as path from "path";
-import { promises as fs } from "fs";
+import * as path from "node:path";
+import { promises as fs } from "node:fs";
+import * as os from "node:os";
+import { updateIndex, loadIndex, persistIndex, searchFiles } from "./indexer";
 
 interface FileItem {
   name: string;
@@ -11,7 +13,36 @@ interface FileItem {
   isDirectory?: boolean;
 }
 
+export interface FileMeta {
+  path: string;
+  name: string;
+  mtime: number;
+  size: number;
+}
+
+export interface IndexedFile {
+  meta: FileMeta;
+  contentHash?: string;
+  text?: string;
+  tokens?: string[];
+}
+
+export interface InvertedIndex {
+  [term: string]: Set<string>;
+}
+
+export interface SearchResult {
+  path: string;
+  name: string;
+  snippet?: string;
+  mtime: number;
+  size: number;
+  score?: number;
+}
+
 let mainWindow: BrowserWindow | null = null;
+let searchIndex: InvertedIndex | null = null;
+let isIndexing = false;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -22,7 +53,7 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, "dist/preload.js"),
+      preload: path.join(__dirname, "preload.js"),
     },
     titleBarStyle: "default",
     show: false,
@@ -32,7 +63,7 @@ function createWindow(): void {
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
   } else {
-    mainWindow.loadFile(path.join(__dirname, "renderer/dist/index.html"));
+    mainWindow.loadFile(path.join(__dirname, "../renderer/dist/index.html"));
   }
 
   mainWindow.once("ready-to-show", () => {
@@ -125,7 +156,7 @@ ipcMain.handle(
 );
 
 ipcMain.handle("fs:getHomeDirectory", (): string => {
-  return require("os").homedir();
+  return os.homedir();
 });
 
 ipcMain.handle(
@@ -145,4 +176,49 @@ ipcMain.handle("dialog:selectDirectory", async (): Promise<string | null> => {
     return result.filePaths[0];
   }
   return null;
+});
+
+ipcMain.handle("search:loadIndex", async (): Promise<boolean> => {
+  searchIndex ??= await loadIndex();
+  return searchIndex !== null;
+});
+
+ipcMain.handle(
+  "search:buildIndex",
+  async (_event, rootPaths: string[]): Promise<void> => {
+    if (isIndexing) return;
+
+    isIndexing = true;
+    try {
+      searchIndex = await updateIndex(rootPaths, (processed, total) => {
+        mainWindow?.webContents.send("indexing:progress", { processed, total });
+      });
+
+      mainWindow?.webContents.send("indexing:complete");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error("Indexing failed:", errorMessage);
+      mainWindow?.webContents.send("indexing:error", errorMessage);
+    } finally {
+      isIndexing = false;
+    }
+  }
+);
+
+ipcMain.handle(
+  "search:files",
+  async (_event, query: string): Promise<SearchResult[]> => {
+    searchIndex ??= await loadIndex();
+
+    if (!searchIndex) {
+      return [];
+    }
+
+    return await searchFiles(query, searchIndex);
+  }
+);
+
+ipcMain.handle("search:getIndexingStatus", (): boolean => {
+  return isIndexing;
 });
