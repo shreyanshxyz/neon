@@ -190,9 +190,21 @@ ipcMain.handle(
 
     isIndexing = true;
     try {
-      searchIndex = await updateIndex(rootPaths, (processed, total) => {
-        mainWindow?.webContents.send("indexing:progress", { processed, total });
-      });
+      searchIndex = (await loadIndex()) || {};
+
+      searchIndex = await updateIndex(
+        rootPaths,
+        (processed, total) => {
+          console.log(`Indexing progress: ${processed}/${total}`);
+          mainWindow?.webContents.send("indexing:progress", {
+            processed,
+            total,
+          });
+        },
+        (currentIndex) => {
+          searchIndex = currentIndex;
+        }
+      );
 
       mainWindow?.webContents.send("indexing:complete");
     } catch (error) {
@@ -209,7 +221,9 @@ ipcMain.handle(
 ipcMain.handle(
   "search:files",
   async (_event, query: string): Promise<SearchResult[]> => {
-    searchIndex ??= await loadIndex();
+    if (!searchIndex) {
+      searchIndex = await loadIndex();
+    }
 
     if (!searchIndex) {
       return [];
