@@ -1,16 +1,6 @@
-import {
-  Home,
-  Monitor,
-  Folder,
-  Download,
-  Image,
-  Music,
-  Video,
-  HardDrive,
-  Layout,
-} from 'lucide-react';
-import { sidebarPlaces, sidebarStorage } from '../../data/mockData';
-import SidebarItem from './SidebarItem';
+import { Home, Monitor, Folder, Download, Image, Music, Video, HardDrive, Layout } from "lucide-react";
+import SidebarItem from "./SidebarItem";
+import { useEffect, useState } from "react";
 
 interface PlacesPanelProps {
   currentPath: string;
@@ -29,6 +19,36 @@ const iconMap: Record<string, typeof Home> = {
 };
 
 export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelProps) {
+  const [homePath, setHomePath] = useState(process.env.HOME || '/home/user');
+
+  useEffect(() => {
+    if (window.filesystem?.homePath) {
+      window.filesystem.homePath().then(setHomePath);
+    }
+  }, []);
+
+  const desktopPath = `${homePath}/Desktop`;
+  const documentsPath = `${homePath}/Documents`;
+  const downloadsPath = `${homePath}/Downloads`;
+  const picturesPath = `${homePath}/Pictures`;
+  const musicPath = `${homePath}/Music`;
+  const videosPath = `${homePath}/Videos`;
+
+  const sidebarPlaces = [
+    { id: "home", name: "Home", icon: "home", path: homePath, type: "place" as const },
+    { id: "desktop", name: "Desktop", icon: "desktop", path: desktopPath, type: "place" as const },
+    { id: "documents", name: "Documents", icon: "folder", path: documentsPath, type: "place" as const },
+    { id: "downloads", name: "Downloads", icon: "download", path: downloadsPath, type: "place" as const },
+    { id: "pictures", name: "Pictures", icon: "picture", path: picturesPath, type: "place" as const },
+    { id: "music", name: "Music", icon: "music", path: musicPath, type: "place" as const },
+    { id: "videos", name: "Videos", icon: "video", path: videosPath, type: "place" as const },
+  ];
+
+  const sidebarStorage = [
+    { id: "root", name: "Root", icon: "drive", path: "/", type: "storage" as const },
+    { id: "home", name: "Home", icon: "drive", path: homePath, type: "storage" as const },
+  ];
+
   return (
     <aside className="w-64 bg-bg-secondary border-r border-border flex flex-col shrink-0">
       <div className="p-3 border-b border-border">
