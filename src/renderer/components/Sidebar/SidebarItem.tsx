@@ -17,7 +17,7 @@ export default function SidebarItem({ icon, label, active, onClick }: SidebarIte
       className={clsx(
         'w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-left justify-start',
         active 
-          ? 'bg-accent-primary/20 text-text-primary' 
+          ? 'bg-accent-primary/20 text-text-primary hover:bg-accent-primary/20 hover:text-text-primary' 
           : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
       )}
     >

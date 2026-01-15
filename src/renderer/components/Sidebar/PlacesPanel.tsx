@@ -39,7 +39,7 @@ export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelPr
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">
-        <div className="px-3 mb-4">
+        <div className="px-3 flex flex-col gap-1 mb-4">
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1 px-3">
             Places
           </h3>
@@ -57,7 +57,7 @@ export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelPr
           })}
         </div>
 
-        <div className="px-3">
+        <div className="px-3 flex flex-col gap-1">
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1 px-3">
             Storage
           </h3>
