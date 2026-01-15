@@ -1,24 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import * as path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow: BrowserWindow | null = null;
-
-if (process.env.NODE_ENV === "development") {
-  const electronReload = await import("electron-reload");
-  electronReload.default(__dirname, {
-    electron: path.join(
-      __dirname,
-      "..",
-      "node_modules",
-      "electron",
-      "dist",
-      "electron",
-    ),
-  });
-}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
