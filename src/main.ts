@@ -5,14 +5,21 @@ let mainWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === "development") {
   require("electron-reload")(__dirname, {
-    electron: path.join(__dirname, "..", "node_modules", "electron", "dist", "electron"),
+    electron: path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "electron",
+      "dist",
+      "electron",
+    ),
   });
 }
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
