@@ -1,6 +1,13 @@
 import { app, BrowserWindow } from "electron";
+import * as path from "path";
 
 let mainWindow: BrowserWindow | null = null;
+
+if (process.env.NODE_ENV === "development") {
+  require("electron-reload")(__dirname, {
+    electron: path.join(__dirname, "..", "node_modules", "electron"),
+  });
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -12,10 +19,11 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.loadFile("index.html");
-
   if (process.env.NODE_ENV === "development") {
+    mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile("index.html");
   }
 
   mainWindow.on("closed", () => {
