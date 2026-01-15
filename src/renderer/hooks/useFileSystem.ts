@@ -19,6 +19,10 @@ interface FileSystemEntry {
   isSymbolicLink: boolean;
 }
 
+const FILE_EXPLORER_CONFIG = {
+  showHiddenByDefault: false,
+};
+
 export function useFileSystem(initialPath: string) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +111,11 @@ export function useFileSystem(initialPath: string) {
           return a.name.localeCompare(b.name);
         });
 
-        setFiles(fileItems);
+        const visibleFiles = FILE_EXPLORER_CONFIG.showHiddenByDefault
+          ? fileItems
+          : fileItems.filter(f => !f.hidden);
+
+        setFiles(visibleFiles);
         setCurrentPath(dirPath);
       } catch (err: unknown) {
         const error = err as { message?: string };
