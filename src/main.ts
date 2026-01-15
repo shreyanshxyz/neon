@@ -5,7 +5,7 @@ let mainWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === "development") {
   require("electron-reload")(__dirname, {
-    electron: path.join(__dirname, "..", "node_modules", "electron"),
+    electron: path.join(__dirname, "..", "node_modules", "electron", "dist", "electron"),
   });
 }
 
