@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { FileItem as FileItemType } from '../../hooks/useFileSystem';
 import { clsx } from 'clsx';
+import { useState } from 'react';
 
 interface FileItemProps {
   file: FileItemType;
@@ -20,6 +21,11 @@ interface FileItemProps {
   onClick: (isCtrlClick: boolean) => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDropTarget?: boolean;
 }
 
 const getIcon = (file: FileItemType) => {
@@ -74,21 +80,81 @@ export default function FileItem({
   onClick,
   onDoubleClick,
   onContextMenu,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  isDropTarget,
 }: FileItemProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const handleClick = (e: React.MouseEvent) => {
     const isCtrlClick = e.ctrlKey || e.metaKey;
     onClick(isCtrlClick);
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    if (onDragStart) {
+      onDragStart(e);
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', file.path);
+    e.dataTransfer.setData('application/json', JSON.stringify(file));
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (file.type === 'folder') {
+      setIsDragOver(true);
+      if (onDragOver) {
+        onDragOver(e);
+      }
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (onDragLeave) {
+      onDragLeave(e);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (onDrop && file.type === 'folder') {
+      onDrop(e);
+    }
+  };
+
   return (
     <div
+      draggable={true}
       className={clsx(
         'flex items-center px-4 py-2 border-b border-border/50 cursor-pointer transition-colors',
-        selected ? 'bg-accent-primary/25 text-text-primary' : 'hover:bg-bg-hover'
+        selected && 'bg-accent-primary/25 text-text-primary',
+        !selected && 'hover:bg-bg-hover',
+        isDragging && 'opacity-50',
+        (isDragOver || isDropTarget) && 'bg-accent-primary/40 border-accent-primary'
       )}
       onClick={handleClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {getIcon(file)}
