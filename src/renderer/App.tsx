@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar/PlacesPanel';
 import FileList from './components/FileView/FileList';
 import Toolbar from './components/Layout/Toolbar';
 import FilePreview from './components/FileView/FilePreview';
+import SearchModal from './components/Search/SearchModal';
 import { useFileSystem, FileItem } from './hooks/useFileSystem';
 
 const pathUtils = {
@@ -27,6 +28,7 @@ function App() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     isOpen: boolean;
     file: FileItem | null;
@@ -65,6 +67,20 @@ function App() {
         }
       });
     }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+
+      if (isCtrl && e.key === 'f') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleNavigate = useCallback(
@@ -180,6 +196,37 @@ function App() {
     setNewFolderDialog({ isOpen: false, name: '' });
   }, [newFolderDialog, currentPath, createFolder]);
 
+  const handleFileDrop = useCallback(
+    async (sourcePath: string, destPath: string) => {
+      const sourceDir = pathUtils.dirname(sourcePath);
+      const destDir = pathUtils.dirname(destPath);
+
+      if (sourceDir === destDir) {
+        await moveFile(sourcePath, destPath);
+      } else {
+        await moveFile(sourcePath, destPath);
+      }
+
+      setSelectedFiles([]);
+    },
+    [moveFile]
+  );
+
+  const handleSearchFileSelect = useCallback((file: FileItem) => {
+    setSelectedFiles([file.id]);
+    if (file.type === 'file') {
+      setPreviewFile(file);
+      setIsPreviewOpen(true);
+    }
+  }, []);
+
+  const handleSearchNavigate = useCallback(
+    (folderPath: string) => {
+      handleNavigate(folderPath);
+    },
+    [handleNavigate]
+  );
+
   return (
     <div className="app-container">
       <Sidebar currentPath={currentPath} onPathChange={handleNavigate} />
@@ -205,6 +252,7 @@ function App() {
           onRename={handleRename}
           onCreateFolder={handleCreateFolder}
           onPreview={handlePreview}
+          onFileDrop={handleFileDrop}
         />
       </main>
       <FilePreview
@@ -212,6 +260,14 @@ function App() {
         isOpen={isPreviewOpen}
         onClose={handleClosePreview}
         readFileContent={readFileContent}
+      />
+      <SearchModal
+        isOpen={isSearchOpen}
+        files={files}
+        currentPath={currentPath}
+        onClose={() => setIsSearchOpen(false)}
+        onFileSelect={handleSearchFileSelect}
+        onNavigateToFolder={handleSearchNavigate}
       />
 
       {renameDialog.isOpen && (
