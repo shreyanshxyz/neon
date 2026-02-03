@@ -1,38 +1,51 @@
-import { Folder, FileArchive, FileText, Image, Music, Video, File, FileCode, FileJson, FileType, Globe } from "lucide-react";
-import { FileItem as FileItemType } from "../../hooks/useFileSystem";
-import { clsx } from "clsx";
+import {
+  Folder,
+  FileArchive,
+  FileText,
+  Image,
+  Music,
+  Video,
+  File,
+  FileCode,
+  FileJson,
+  FileType,
+  Globe,
+} from 'lucide-react';
+import { FileItem as FileItemType } from '../../hooks/useFileSystem';
+import { clsx } from 'clsx';
 
 interface FileItemProps {
   file: FileItemType;
   selected?: boolean;
-  onClick: () => void;
+  onClick: (isCtrlClick: boolean) => void;
   onDoubleClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }
 
 const getIcon = (file: FileItemType) => {
-  if (file.type === "folder") return <Folder className="w-5 h-5 text-blue-400" />;
+  if (file.type === 'folder') return <Folder className="w-5 h-5 text-blue-400" />;
 
-  const iconColor = "text-text-secondary";
+  const iconColor = 'text-text-secondary';
   switch (file.icon) {
-    case "archive":
+    case 'archive':
       return <FileArchive className="w-5 h-5 text-amber-400" />;
-    case "text":
+    case 'text':
       return <FileText className={`w-5 h-5 ${iconColor}`} />;
-    case "image":
+    case 'image':
       return <Image className="w-5 h-5 text-purple-400" />;
-    case "audio":
+    case 'audio':
       return <Music className="w-5 h-5 text-pink-400" />;
-    case "video":
+    case 'video':
       return <Video className="w-5 h-5 text-red-400" />;
-    case "code":
+    case 'code':
       return <FileCode className="w-5 h-5 text-cyan-400" />;
-    case "web":
+    case 'web':
       return <Globe className="w-5 h-5 text-green-400" />;
-    case "data":
+    case 'data':
       return <FileJson className="w-5 h-5 text-orange-400" />;
-    case "document":
+    case 'document':
       return <FileType className="w-5 h-5 text-blue-300" />;
-    case "pdf":
+    case 'pdf':
       return <FileText className="w-5 h-5 text-red-500" />;
     default:
       return <File className={`w-5 h-5 ${iconColor}`} />;
@@ -40,30 +53,42 @@ const getIcon = (file: FileItemType) => {
 };
 
 const formatSize = (bytes: number): string => {
-  if (bytes === 0) return "-";
+  if (bytes === 0) return '-';
   const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
+  const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
   });
 };
 
-export default function FileItem({ file, selected, onClick, onDoubleClick }: FileItemProps) {
+export default function FileItem({
+  file,
+  selected,
+  onClick,
+  onDoubleClick,
+  onContextMenu,
+}: FileItemProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    const isCtrlClick = e.ctrlKey || e.metaKey;
+    onClick(isCtrlClick);
+  };
+
   return (
     <div
       className={clsx(
-        "flex items-center px-4 py-2 border-b border-border/50 cursor-pointer transition-colors",
-        selected ? "bg-accent-primary/25 text-text-primary" : "hover:bg-bg-hover"
+        'flex items-center px-4 py-2 border-b border-border/50 cursor-pointer transition-colors',
+        selected ? 'bg-accent-primary/25 text-text-primary' : 'hover:bg-bg-hover'
       )}
-      onClick={onClick}
+      onClick={handleClick}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {getIcon(file)}
