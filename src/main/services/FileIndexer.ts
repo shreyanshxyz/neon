@@ -25,7 +25,7 @@ interface SearchResult {
 interface ParsedQuery {
   keywords: string[];
   fileTypes?: string[];
-  dateRange?: { start: Date; end: Date };
+  dateRange?: { start: string; end: string };
   sizeRange?: { min?: number; max?: number };
   namePattern?: string;
   contentQuery?: string;
@@ -163,7 +163,9 @@ class FileIndexer {
     }
 
     if (query.dateRange) {
-      if (file.modified < query.dateRange.start || file.modified > query.dateRange.end) {
+      const startDate = new Date(query.dateRange.start);
+      const endDate = new Date(query.dateRange.end);
+      if (file.modified < startDate || file.modified > endDate) {
         return { file, score: 0, matches: {} };
       }
     }
