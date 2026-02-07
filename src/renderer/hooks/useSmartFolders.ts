@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 export interface ParsedQuery {
   keywords: string[];
   fileTypes?: string[];
-  dateRange?: { start: Date; end: Date };
+  dateRange?: { start: string; end: string };
   sizeRange?: { min?: number; max?: number };
   namePattern?: string;
   contentQuery?: string;
@@ -157,17 +157,25 @@ export function useSmartFolders() {
 
   const executeFolder = useCallback(
     async (id: string): Promise<{ success: boolean; results?: SearchResult[]; error?: string }> => {
+      setLoading(true);
+      setError(null);
+
       try {
         const response = await window.smartFolders.execute(id);
 
         if (response.success && response.results) {
           return { success: true, results: response.results };
         } else {
-          return { success: false, error: response.error || 'Failed to execute smart folder' };
+          const errorMsg = response.error || 'Failed to execute smart folder';
+          setError(errorMsg);
+          return { success: false, error: errorMsg };
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to execute smart folder';
+        setError(errorMsg);
         return { success: false, error: errorMsg };
+      } finally {
+        setLoading(false);
       }
     },
     []
