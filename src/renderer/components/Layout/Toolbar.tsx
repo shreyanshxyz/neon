@@ -1,7 +1,5 @@
-import { ArrowLeft, ArrowRight, ArrowUp, RefreshCw, Search } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { ChangeEvent } from 'react';
+import { ArrowLeft, ArrowRight, ArrowUp, RefreshCw, Search, Grid3X3, List } from 'lucide-react';
+import { ChangeEvent, useState } from 'react';
 
 interface ToolbarProps {
   currentPath: string;
@@ -9,6 +7,8 @@ interface ToolbarProps {
   selectedCount: number;
   isSmartFolderView?: boolean;
   smartFolderName?: string;
+  viewMode?: 'grid' | 'list';
+  onViewModeChange?: (mode: 'grid' | 'list') => void;
 }
 
 export default function Toolbar({
@@ -17,7 +17,11 @@ export default function Toolbar({
   selectedCount,
   isSmartFolderView = false,
   smartFolderName,
+  viewMode = 'list',
+  onViewModeChange,
 }: ToolbarProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
   const handleBack = () => {
     const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
@@ -31,61 +35,102 @@ export default function Toolbar({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       onPathChange((e.target as HTMLInputElement).value);
+      setIsEditing(false);
+    }
+    if (e.key === 'Escape') {
+      setIsEditing(false);
     }
   };
 
   const displayPath =
-    isSmartFolderView && smartFolderName ? `Smart Folder: ${smartFolderName}` : currentPath;
+    isSmartFolderView && smartFolderName ? `smartfolder://${smartFolderName}` : currentPath;
 
   return (
-    <header className="h-12 bg-bg-secondary border-b border-border flex items-center px-4 gap-2">
+    <header className="h-12 bg-terminal-surface border-b border-terminal-border flex items-center px-4 gap-3">
+      <span className="font-terminal text-terminal-green text-lg select-none">λ</span>
+
       <div className="flex items-center gap-1">
-        <Button variant="icon" onClick={handleBack} disabled={currentPath === '/'}>
+        <button
+          onClick={handleBack}
+          disabled={currentPath === '/'}
+          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded disabled:opacity-30 disabled:cursor-not-allowed"
+        >
           <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <Button variant="icon" disabled>
+        </button>
+        <button disabled className="p-2 text-terminal-muted opacity-30 cursor-not-allowed">
           <ArrowRight className="w-4 h-4" />
-        </Button>
-        <Button variant="icon" onClick={handleBack} disabled={currentPath === '/'}>
+        </button>
+        <button
+          onClick={handleBack}
+          disabled={currentPath === '/'}
+          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded disabled:opacity-30 disabled:cursor-not-allowed"
+        >
           <ArrowUp className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="icon"
+        </button>
+      </div>
+
+      <div className="flex-1 mx-2">
+        {isSmartFolderView ? (
+          <div className="w-full px-3 py-1.5 bg-terminal-green/10 border border-terminal-green/30 rounded text-terminal-green text-sm font-terminal">
+            {displayPath}
+          </div>
+        ) : (
+          <div className="relative flex items-center">
+            {isEditing ? (
+              <input
+                value={displayPath}
+                onChange={handlePathChange}
+                onKeyDown={handleKeyDown}
+                onBlur={() => setIsEditing(false)}
+                className="w-full px-3 py-1.5 bg-terminal-bg border border-terminal-green/50 rounded text-terminal-text text-sm font-terminal focus:outline-none focus:ring-1 focus:ring-terminal-green/50"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full px-3 py-1.5 bg-terminal-bg border border-terminal-border rounded text-terminal-text text-sm font-terminal text-left hover:border-terminal-green/30 transition-all duration-0"
+              >
+                <span className="text-terminal-muted">~</span>
+                <span className="ml-1">
+                  {displayPath.replace(process.env.HOME || '', '') || '/'}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {onViewModeChange && (
+        <div className="flex items-center gap-1 bg-terminal-bg rounded border border-terminal-border p-0.5">
+          <button
+            onClick={() => onViewModeChange('grid')}
+            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-terminal-elevated text-terminal-green' : 'text-terminal-muted hover:text-terminal-text'}`}
+          >
+            <Grid3X3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onViewModeChange('list')}
+            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-terminal-elevated text-terminal-green' : 'text-terminal-muted hover:text-terminal-text'}`}
+          >
+            <List className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1">
+        <button
           onClick={() => {
             const path = window.location.pathname.replace('/home/shreyanshxyz/Dev/neon', '');
             onPathChange(path || '/');
           }}
+          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded"
         >
           <RefreshCw className="w-4 h-4" />
-        </Button>
-      </div>
-
-      <div className="flex-1 mx-4">
-        {isSmartFolderView ? (
-          <div className="w-full px-3 py-2 bg-accent-primary/10 border border-accent-primary/30 rounded text-text-primary text-sm font-medium">
-            {displayPath}
-          </div>
-        ) : (
-          <Input
-            value={displayPath}
-            onChange={handlePathChange}
-            onKeyDown={handleKeyDown}
-            className="w-full"
-          />
-        )}
-      </div>
-
-      <div className="flex items-center gap-1">
-        <Button variant="icon">
+        </button>
+        <button className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded">
           <Search className="w-4 h-4" />
-        </Button>
+        </button>
       </div>
-
-      {selectedCount > 0 && (
-        <div className="ml-4 px-2 py-1 bg-accent-primary/20 rounded text-xs text-accent-primary">
-          {selectedCount} selected
-        </div>
-      )}
     </header>
   );
 }
