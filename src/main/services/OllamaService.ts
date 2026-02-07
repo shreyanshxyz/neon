@@ -28,13 +28,25 @@ class OllamaService {
   }
 
   async listModels(): Promise<string[]> {
-    const response = await fetch(`${this.baseUrl}/api/tags`);
-    if (!response.ok) {
-      throw new Error(`Failed to list models: ${response.status}`);
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const data = (await response.json()) as { models?: { name: string }[] };
-    return (data.models || []).map((model) => model.name);
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to list models: ${response.status}`);
+      }
+
+      const data = (await response.json()) as { models?: { name: string }[] };
+      return (data.models || []).map((model) => model.name);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   }
 
   async isModelAvailable(model: string): Promise<boolean> {
@@ -50,65 +62,91 @@ class OllamaService {
   }
 
   async chat(messages: ChatMessage[], model?: string): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model || this.defaultModel,
-        messages,
-        stream: false,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for chat
 
-    if (!response.ok) {
-      throw new Error(`Chat failed: ${response.status}`);
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: model || this.defaultModel,
+          messages,
+          stream: false,
+        }),
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Chat failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as { message?: { content?: string } };
+      return data.message?.content || '';
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-
-    const data = (await response.json()) as { message?: { content?: string } };
-    return data.message?.content || '';
   }
 
   async *streamChat(messages: ChatMessage[], model?: string): AsyncGenerator<string> {
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model || this.defaultModel,
-        messages,
-        stream: true,
-      }),
-    });
+    const controller = new AbortController();
+    // No timeout for streaming - it can take a while
 
-    if (!response.ok || !response.body) {
-      throw new Error(`Streaming chat failed: ${response.status}`);
-    }
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: model || this.defaultModel,
+          messages,
+          stream: true,
+        }),
+      });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+      if (!response.ok || !response.body) {
+        throw new Error(`Streaming chat failed: ${response.status}`);
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      let newlineIndex = buffer.indexOf('\n');
-      while (newlineIndex !== -1) {
-        const line = buffer.slice(0, newlineIndex).trim();
-        buffer = buffer.slice(newlineIndex + 1);
-        if (line) {
-          try {
-            const parsed = JSON.parse(line) as { message?: { content?: string } };
-            const chunk = parsed.message?.content || '';
-            if (chunk) {
-              yield chunk;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex = buffer.indexOf('\n');
+          while (newlineIndex !== -1) {
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+            if (line) {
+              try {
+                const parsed = JSON.parse(line) as { message?: { content?: string } };
+                const chunk = parsed.message?.content || '';
+                if (chunk) {
+                  yield chunk;
+                }
+              } catch (error) {
+                console.warn('Failed to parse stream chunk:', error);
+              }
             }
-          } catch (error) {
-            console.warn('Failed to parse stream chunk:', error);
+            newlineIndex = buffer.indexOf('\n');
           }
         }
-        newlineIndex = buffer.indexOf('\n');
+      } finally {
+        reader.releaseLock();
       }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Stream aborted');
+        return;
+      }
+      throw error;
     }
   }
 
@@ -130,7 +168,17 @@ class OllamaService {
     ]);
 
     try {
-      const parsed = JSON.parse(response) as ParsedQuery;
+      let cleanedResponse = response.trim();
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.slice(7).trim();
+      } else if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.slice(3).trim();
+      }
+      if (cleanedResponse.endsWith('```')) {
+        cleanedResponse = cleanedResponse.slice(0, -3).trim();
+      }
+
+      const parsed = JSON.parse(cleanedResponse) as ParsedQuery;
       return this.normalizeParsedQuery(parsed);
     } catch (error) {
       console.warn('Failed to parse LLM JSON, falling back to keywords only:', error);
