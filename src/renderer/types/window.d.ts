@@ -202,9 +202,44 @@ interface OllamaAPI {
   ): () => void;
 }
 
+interface PluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author?: string;
+  capabilities: Record<string, { fileTypes: string[]; maxFileSize?: number }>;
+  priority: number;
+  enabled: boolean;
+  wasmPath: string;
+  lastError?: string;
+}
+
+interface PluginListResponse {
+  success: boolean;
+  plugins?: PluginInfo[];
+  error?: string;
+}
+
+interface PluginExecuteResponse {
+  success: boolean;
+  data?: Uint8Array;
+  mimeType?: string;
+  plugin?: PluginInfo;
+  error?: string;
+}
+
+interface PluginsAPI {
+  list(): Promise<PluginListResponse>;
+  execute(payload: { capability: string; filePath: string }): Promise<PluginExecuteResponse>;
+  setPriority(payload: { pluginId: string; priority: number }): Promise<{ success: boolean }>;
+  toggle(payload: { pluginId: string; enabled: boolean }): Promise<{ success: boolean }>;
+}
+
 interface Window {
   filesystem: FileSystemAPI;
   search: SearchAPI;
   smartFolders: SmartFoldersAPI;
   ollama?: OllamaAPI;
+  plugins?: PluginsAPI;
 }
