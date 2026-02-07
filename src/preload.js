@@ -75,3 +75,10 @@ contextBridge.exposeInMainWorld('ollama', {
     return cleanup;
   },
 });
+
+contextBridge.exposeInMainWorld('plugins', {
+  list: () => ipcRenderer.invoke('plugins:list'),
+  execute: (payload) => ipcRenderer.invoke('plugins:execute', payload),
+  setPriority: (payload) => ipcRenderer.invoke('plugins:setPriority', payload),
+  toggle: (payload) => ipcRenderer.invoke('plugins:toggle', payload),
+});
