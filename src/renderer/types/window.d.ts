@@ -98,7 +98,66 @@ interface SearchAPI {
   getSuggestions(partial: string): Promise<SearchSuggestionsResponse>;
 }
 
+interface SmartFolder {
+  id: string;
+  name: string;
+  query: string;
+  parsedQuery: ParsedQuery;
+  icon?: string;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SmartFoldersGetAllResponse {
+  success: boolean;
+  folders?: SmartFolder[];
+  error?: string;
+}
+
+interface SmartFolderCreateResponse {
+  success: boolean;
+  folder?: SmartFolder;
+  error?: string;
+}
+
+interface SmartFolderUpdateResponse {
+  success: boolean;
+  folder?: SmartFolder;
+  error?: string;
+}
+
+interface SmartFolderDeleteResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface SmartFolderExecuteResponse {
+  success: boolean;
+  folder?: SmartFolder;
+  results?: SearchResult[];
+  error?: string;
+}
+
+interface SmartFolderCountResponse {
+  success: boolean;
+  count?: number;
+  error?: string;
+}
+
+interface SmartFoldersAPI {
+  getAll(): Promise<SmartFoldersGetAllResponse>;
+  create(
+    data: Omit<SmartFolder, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<SmartFolderCreateResponse>;
+  update(id: string, data: Partial<SmartFolder>): Promise<SmartFolderUpdateResponse>;
+  delete(id: string): Promise<SmartFolderDeleteResponse>;
+  execute(id: string): Promise<SmartFolderExecuteResponse>;
+  getCount(): Promise<SmartFolderCountResponse>;
+}
+
 interface Window {
   filesystem: FileSystemAPI;
   search: SearchAPI;
+  smartFolders: SmartFoldersAPI;
 }
