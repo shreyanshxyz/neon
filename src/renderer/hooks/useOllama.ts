@@ -150,22 +150,30 @@ export function useOllama() {
 
       return new Promise<{ cleanup: () => void }>((resolve, reject) => {
         let cleanupFn: (() => void) | undefined;
+        let isCompleted = false;
+
+        const handleDone = () => {
+          if (isCompleted) return;
+          isCompleted = true;
+          setIsLoading(false);
+          resolve({ cleanup: cleanupFn || (() => {}) });
+        };
+
+        const handleError = (err: string) => {
+          if (isCompleted) return;
+          isCompleted = true;
+          setIsLoading(false);
+          const errorMsg = err || 'Streaming failed';
+          setError(errorMsg);
+          reject(new Error(errorMsg));
+        };
 
         cleanupFn = window.ollama?.streamChat(
           { requestId, messages, model: selectedModel || undefined },
           (chunk) => onChunk(chunk),
-          () => {
-            setIsLoading(false);
-          },
-          (err) => {
-            setIsLoading(false);
-            const errorMsg = err || 'Streaming failed';
-            setError(errorMsg);
-            reject(new Error(errorMsg));
-          }
+          handleDone,
+          handleError
         );
-
-        resolve({ cleanup: cleanupFn || (() => {}) });
       });
     },
     [selectedModel]
