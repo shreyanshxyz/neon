@@ -162,12 +162,12 @@ class OllamaService {
 
     const userPrompt = `Query: ${query}${contextBlock}`;
 
-    const response = await this.chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
-
     try {
+      const response = await this.chat([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]);
+
       let cleanedResponse = response.trim();
       if (cleanedResponse.startsWith('```json')) {
         cleanedResponse = cleanedResponse.slice(7).trim();
@@ -181,6 +181,9 @@ class OllamaService {
       const parsed = JSON.parse(cleanedResponse) as ParsedQuery;
       return this.normalizeParsedQuery(parsed);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.warn('Failed to parse LLM JSON, falling back to keywords only:', error);
       return this.normalizeParsedQuery({ keywords: query.split(/\s+/).filter(Boolean) });
     }
