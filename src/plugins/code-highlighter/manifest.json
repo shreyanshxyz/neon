@@ -1,0 +1,15 @@
+{
+  "name": "code-highlighter",
+  "version": "1.0.0",
+  "description": "Syntax highlight code files",
+  "author": "Neon Team",
+  "capabilities": {
+    "preview": {
+      "fileTypes": ["js", "ts", "tsx", "jsx", "json", "md", "rs", "py"],
+      "maxFileSize": 1048576
+    }
+  },
+  "priority": 5,
+  "wasm": "plugin.wasm",
+  "memoryLimit": 134217728
+}

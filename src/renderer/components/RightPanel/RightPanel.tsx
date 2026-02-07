@@ -1,10 +1,11 @@
 import { FileItem } from '../../hooks/useFileSystem';
 import FilePreview from '../FileView/FilePreview';
 import LLMChatPanel from '../Chat/LLMChatPanel';
+import PluginManager from '../Plugins/PluginManager';
 
 interface RightPanelProps {
-  tab: 'preview' | 'chat';
-  onTabChange: (tab: 'preview' | 'chat') => void;
+  tab: 'preview' | 'chat' | 'plugins';
+  onTabChange: (tab: 'preview' | 'chat' | 'plugins') => void;
   file: FileItem | null;
   selectedFiles: FileItem[];
   currentPath: string;
@@ -47,6 +48,16 @@ export default function RightPanel({
         >
           Chat
         </button>
+        <button
+          onClick={() => onTabChange('plugins')}
+          className={`flex-1 px-3 py-1.5 text-xs rounded transition-colors ${
+            tab === 'plugins'
+              ? 'bg-accent-primary/20 text-accent-primary'
+              : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
+          }`}
+        >
+          Plugins
+        </button>
       </div>
       <div className="flex-1 min-h-0">
         {tab === 'preview' ? (
@@ -63,8 +74,10 @@ export default function RightPanel({
               Select a file to preview
             </div>
           )
-        ) : (
+        ) : tab === 'chat' ? (
           <LLMChatPanel selectedFiles={selectedFiles} currentPath={currentPath} />
+        ) : (
+          <PluginManager />
         )}
       </div>
     </div>

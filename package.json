@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "npm run build && electron .",
-    "build": "npm run build:main && npm run build:renderer",
+    "build": "npm run build:plugins && npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
+    "build:plugins": "./scripts/build-plugins.sh",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc -p tsconfig.main.json -w & NODE_ENV=development electron .",
     "dev:renderer": "vite"

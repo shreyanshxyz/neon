@@ -6,6 +6,7 @@ import { FileIndexer } from './main/services/FileIndexer.js';
 import { QueryParser } from './main/services/QueryParser.js';
 import { SmartFolderService } from './main/services/SmartFolderService.js';
 import { OllamaService } from './main/services/OllamaService.js';
+import { PluginService } from './main/services/PluginService.js';
 import type { ParsedQuery } from './main/services/FileIndexer.js';
 import type { ChatMessage, FileContext } from './main/services/OllamaService.js';
 
@@ -15,6 +16,7 @@ const fileIndexer = new FileIndexer();
 const queryParser = new QueryParser();
 const smartFolderService = new SmartFolderService();
 const ollamaService = new OllamaService();
+const pluginService = new PluginService();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -360,6 +362,27 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle('plugins:list', async () => {
+  return { success: true, plugins: pluginService.listPlugins() };
+});
+
+ipcMain.handle('plugins:execute', async (_, payload: { capability: string; filePath: string }) => {
+  return pluginService.executeCapability(payload.capability, payload.filePath);
+});
+
+ipcMain.handle(
+  'plugins:setPriority',
+  async (_, payload: { pluginId: string; priority: number }) => {
+    pluginService.setPluginPriority(payload.pluginId, payload.priority);
+    return { success: true };
+  }
+);
+
+ipcMain.handle('plugins:toggle', async (_, payload: { pluginId: string; enabled: boolean }) => {
+  pluginService.togglePlugin(payload.pluginId, payload.enabled);
+  return { success: true };
+});
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -383,7 +406,8 @@ function createWindow(): void {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await pluginService.loadPlugins();
   createWindow();
 
   app.on('activate', () => {

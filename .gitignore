@@ -39,3 +39,6 @@ Thumbs.db
 
 app/dist/
 release/
+
+src/plugins/**/target/
+src/plugins/**/plugin.wasm
