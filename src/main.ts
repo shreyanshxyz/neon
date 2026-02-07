@@ -255,6 +255,15 @@ ipcMain.handle('smartFolders:delete', async (_, id) => {
 ipcMain.handle('smartFolders:execute', async (_, id) => {
   try {
     const folder = await smartFolderService.execute(id);
+
+    if (fileIndexer.getIndexedCount() === 0) {
+      return {
+        success: false,
+        error:
+          'No files indexed yet. Please navigate to a directory first to build the search index.',
+      };
+    }
+
     const parsedQuery = queryParser.parse(folder.query);
     const results = fileIndexer.search(parsedQuery);
     return { success: true, folder, results };
