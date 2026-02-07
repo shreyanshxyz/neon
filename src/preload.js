@@ -49,25 +49,29 @@ contextBridge.exposeInMainWorld('ollama', {
 
     const handleError = (_event, data) => {
       if (data.requestId === requestId) {
-        ipcRenderer.removeListener('ollama:streamChat:chunk', handleChunk);
-        ipcRenderer.removeListener('ollama:streamChat:done', handleDone);
-        ipcRenderer.removeListener('ollama:streamChat:error', handleError);
+        cleanup();
         onError?.(data.error);
       }
     };
 
     const handleDone = (_event, data) => {
       if (data.requestId === requestId) {
-        ipcRenderer.removeListener('ollama:streamChat:chunk', handleChunk);
-        ipcRenderer.removeListener('ollama:streamChat:done', handleDone);
-        ipcRenderer.removeListener('ollama:streamChat:error', handleError);
+        cleanup();
         onDone?.();
       }
+    };
+
+    const cleanup = () => {
+      ipcRenderer.removeListener('ollama:streamChat:chunk', handleChunk);
+      ipcRenderer.removeListener('ollama:streamChat:done', handleDone);
+      ipcRenderer.removeListener('ollama:streamChat:error', handleError);
     };
 
     ipcRenderer.on('ollama:streamChat:chunk', handleChunk);
     ipcRenderer.on('ollama:streamChat:done', handleDone);
     ipcRenderer.on('ollama:streamChat:error', handleError);
     ipcRenderer.send('ollama:streamChat', payload);
+
+    return cleanup;
   },
 });
