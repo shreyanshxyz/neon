@@ -23,3 +23,12 @@ contextBridge.exposeInMainWorld('search', {
   clear: () => ipcRenderer.invoke('search:clear'),
   getSuggestions: (partial) => ipcRenderer.invoke('search:getSuggestions', partial),
 });
+
+contextBridge.exposeInMainWorld('smartFolders', {
+  getAll: () => ipcRenderer.invoke('smartFolders:getAll'),
+  create: (data) => ipcRenderer.invoke('smartFolders:create', data),
+  update: (id, data) => ipcRenderer.invoke('smartFolders:update', id, data),
+  delete: (id) => ipcRenderer.invoke('smartFolders:delete', id),
+  execute: (id) => ipcRenderer.invoke('smartFolders:execute', id),
+  getCount: () => ipcRenderer.invoke('smartFolders:getCount'),
+});
