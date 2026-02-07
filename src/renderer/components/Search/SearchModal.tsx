@@ -28,14 +28,18 @@ export default function SearchModal({
   const {
     results,
     isSearching,
+    isAiSearching,
     isIndexing,
     indexedCount,
     parsedQuery,
+    aiParsedQuery,
     error,
     search,
     indexDirectory,
     getSuggestions,
     clearSearch,
+    searchMode,
+    setSearchMode,
   } = useSearch();
 
   useEffect(() => {
@@ -67,8 +71,9 @@ export default function SearchModal({
     if (!isOpen) {
       setQuery('');
       clearSearch();
+      setSearchMode('standard');
     }
-  }, [isOpen, clearSearch]);
+  }, [isOpen, clearSearch, setSearchMode]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -138,7 +143,9 @@ export default function SearchModal({
             placeholder="Search files... (e.g., 'javascript files from last week')"
             className="flex-1 bg-transparent text-text-primary placeholder:text-text-muted outline-none text-lg"
           />
-          {isSearching && <Loader2 className="w-4 h-4 text-text-muted animate-spin" />}
+          {(isSearching || isAiSearching) && (
+            <Loader2 className="w-4 h-4 text-text-muted animate-spin" />
+          )}
           {query && (
             <button
               onClick={() => {
@@ -156,6 +163,14 @@ export default function SearchModal({
           >
             ESC
           </button>
+          <button
+            onClick={() => setSearchMode(searchMode === 'standard' ? 'ai' : 'standard')}
+            className="px-2 py-1 text-xs border border-border rounded text-text-muted hover:text-text-primary hover:border-text-muted transition-colors flex items-center gap-1"
+            title="Toggle search mode"
+          >
+            <Filter className="w-3 h-3" />
+            {searchMode === 'standard' ? 'Standard' : 'AI'}
+          </button>
         </div>
 
         {isIndexing && (
@@ -167,7 +182,7 @@ export default function SearchModal({
           </div>
         )}
 
-        {parsedQuery && query.trim() && (
+        {searchMode === 'standard' && parsedQuery && query.trim() && (
           <div className="px-4 py-2 bg-bg-tertiary/50 border-b border-border">
             <div className="flex items-center gap-2 flex-wrap text-xs">
               <span className="text-text-muted">Parsed:</span>
@@ -205,6 +220,48 @@ export default function SearchModal({
           </div>
         )}
 
+        {searchMode === 'ai' && query.trim() && (
+          <div className="px-4 py-2 bg-bg-tertiary/50 border-b border-border">
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-text-muted">AI interpreted:</span>
+              {isAiSearching && (
+                <span className="px-2 py-0.5 bg-accent-primary/20 text-accent-primary rounded">
+                  thinking...
+                </span>
+              )}
+              {aiParsedQuery?.keywords?.length ? (
+                <span className="px-2 py-0.5 bg-accent-primary/20 text-accent-primary rounded">
+                  keywords: {aiParsedQuery.keywords.join(', ')}
+                </span>
+              ) : null}
+              {aiParsedQuery?.fileTypes && (
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                  types: {aiParsedQuery.fileTypes.join(', ')}
+                </span>
+              )}
+              {aiParsedQuery?.dateRange && (
+                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                  date range
+                </span>
+              )}
+              {aiParsedQuery?.sizeRange && (
+                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                  size filter
+                </span>
+              )}
+              {aiParsedQuery?.namePattern && (
+                <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded">
+                  name: {aiParsedQuery.namePattern}
+                </span>
+              )}
+              {aiParsedQuery?.contentQuery && (
+                <span className="px-2 py-0.5 bg-pink-500/20 text-pink-400 rounded">
+                  content: "{aiParsedQuery.contentQuery}"
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {showSuggestions && !query.trim() && (
           <div className="px-4 py-3 bg-bg-tertiary/30 border-b border-border">
             <div className="flex items-center gap-2 mb-2">
