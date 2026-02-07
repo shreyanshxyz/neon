@@ -69,44 +69,44 @@ class QueryParser {
     return [...new Set(types)];
   }
 
-  private extractDateRange(query: string): { start: Date; end: Date } | null {
+  private extractDateRange(query: string): { start: string; end: string } | null {
     const now = new Date();
 
     if (/last\s+(\d+)\s+days?|past\s+(\d+)\s+days?/.test(query)) {
       const match = query.match(/last\s+(\d+)\s+days?|past\s+(\d+)\s+days?/);
       const days = parseInt(match?.[1] || match?.[2] || '7');
       return {
-        start: new Date(now.getTime() - days * 24 * 60 * 60 * 1000),
-        end: now,
+        start: new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString(),
+        end: now.toISOString(),
       };
     }
 
     if (/last\s+week/.test(query)) {
       return {
-        start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        end: now,
+        start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        end: now.toISOString(),
       };
     }
 
     if (/last\s+month/.test(query)) {
       const start = new Date(now);
       start.setMonth(start.getMonth() - 1);
-      return { start, end: now };
+      return { start: start.toISOString(), end: now.toISOString() };
     }
 
     const yearMatch = query.match(/(?:from|in)\s+(\d{4})/);
     if (yearMatch) {
       const year = parseInt(yearMatch[1]);
       return {
-        start: new Date(year, 0, 1),
-        end: new Date(year, 11, 31, 23, 59, 59),
+        start: new Date(year, 0, 1).toISOString(),
+        end: new Date(year, 11, 31, 23, 59, 59).toISOString(),
       };
     }
 
     if (/today/.test(query)) {
       const start = new Date(now);
       start.setHours(0, 0, 0, 0);
-      return { start, end: now };
+      return { start: start.toISOString(), end: now.toISOString() };
     }
 
     if (/yesterday/.test(query)) {
@@ -115,7 +115,7 @@ class QueryParser {
       start.setHours(0, 0, 0, 0);
       const end = new Date(start);
       end.setHours(23, 59, 59, 999);
-      return { start, end };
+      return { start: start.toISOString(), end: end.toISOString() };
     }
 
     return null;
