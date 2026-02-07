@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface ParsedQuery {
   keywords: string[];
   fileTypes?: string[];
-  dateRange?: { start: Date; end: Date };
+  dateRange?: { start: string; end: string };
   sizeRange?: { min?: number; max?: number };
   namePattern?: string;
   contentQuery?: string;
@@ -102,9 +102,11 @@ class SmartFolderService {
       }
     }
 
+    const { id: _, createdAt: __, ...safeUpdates } = updates;
+
     const updatedFolder = {
       ...folders[index],
-      ...updates,
+      ...safeUpdates,
       updatedAt: new Date().toISOString(),
     };
 
