@@ -30,7 +30,7 @@ function App() {
   const [currentPath, setCurrentPath] = useState(process.env.HOME || '/home/user');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
-  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat'>('preview');
+  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat' | 'plugins'>('preview');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     isOpen: boolean;
