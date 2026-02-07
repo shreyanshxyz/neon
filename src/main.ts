@@ -325,39 +325,38 @@ ipcMain.handle('ollama:chat', async (_, payload: { messages: ChatMessage[]; mode
 
 ipcMain.on(
   'ollama:streamChat',
-  async (
-    event,
-    payload: { requestId: string; messages: ChatMessage[]; model?: string }
-  ) => {
+  async (event, payload: { requestId: string; messages: ChatMessage[]; model?: string }) => {
     const { requestId, messages, model } = payload;
-  try {
-    for await (const chunk of ollamaService.streamChat(messages, model)) {
-      event.sender.send('ollama:streamChat:chunk', { requestId, chunk });
+    try {
+      for await (const chunk of ollamaService.streamChat(messages, model)) {
+        if (event.sender.isDestroyed()) break;
+        event.sender.send('ollama:streamChat:chunk', { requestId, chunk });
+      }
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('ollama:streamChat:done', { requestId });
+      }
+    } catch (error: unknown) {
+      if (!event.sender.isDestroyed()) {
+        const err = error as { message?: string };
+        event.sender.send('ollama:streamChat:error', {
+          requestId,
+          error: err.message || 'Streaming failed',
+        });
+      }
     }
-    event.sender.send('ollama:streamChat:done', { requestId });
-  } catch (error: unknown) {
-    const err = error as { message?: string };
-    event.sender.send('ollama:streamChat:error', {
-      requestId,
-      error: err.message || 'Streaming failed',
-    });
-  }
   }
 );
 
 ipcMain.handle(
   'ollama:generateSearch',
   async (_, payload: { query: string; context?: FileContext }) => {
-  try {
-    const parsedQuery = await ollamaService.generateSearchQuery(
-      payload.query,
-      payload.context
-    );
-    return { success: true, parsedQuery };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
-    return { success: false, error: err.message || 'AI search failed' };
-  }
+    try {
+      const parsedQuery = await ollamaService.generateSearchQuery(payload.query, payload.context);
+      return { success: true, parsedQuery };
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return { success: false, error: err.message || 'AI search failed' };
+    }
   }
 );
 
