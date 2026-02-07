@@ -57,7 +57,8 @@ fn syntax_for_extension<'a>(set: &'a SyntaxSet, extension: &str) -> &'a syntect:
 }
 
 fn write_result(data: Vec<u8>, mime_type: &str) {
-  let mime = mime_type.as_bytes().to_vec();
+  let mut mime = mime_type.as_bytes().to_vec();
+  mime.push(0); 
   let data_ptr = data.as_ptr() as i32;
   let data_len = data.len() as i32;
   let mime_ptr = mime.as_ptr() as i32;

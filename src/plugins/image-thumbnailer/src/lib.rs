@@ -71,7 +71,8 @@ fn resize_to_thumbnail(image: DynamicImage, max_width: u32, max_height: u32) -> 
 }
 
 fn write_result(data: Vec<u8>, mime_type: &str) {
-  let mime = mime_type.as_bytes().to_vec();
+  let mut mime = mime_type.as_bytes().to_vec();
+  mime.push(0); 
   let data_ptr = data.as_ptr() as i32;
   let data_len = data.len() as i32;
   let mime_ptr = mime.as_ptr() as i32;
