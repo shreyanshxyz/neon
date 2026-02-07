@@ -58,7 +58,9 @@ export function useOllama() {
   const sendMessage = useCallback(
     async (message: string, context?: FileContext) => {
       if (!window.ollama) {
-        throw new Error('Ollama is not available');
+        const errorMsg = 'Ollama is not available';
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       setIsLoading(true);
@@ -94,6 +96,10 @@ export function useOllama() {
         }
 
         return response.response;
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to send message';
+        setError(errorMsg);
+        throw err;
       } finally {
         setIsLoading(false);
       }
@@ -102,9 +108,16 @@ export function useOllama() {
   );
 
   const streamMessage = useCallback(
-    async (message: string, onChunk: (chunk: string) => void, context?: FileContext) => {
+    async (
+      message: string,
+      onChunk: (chunk: string) => void,
+      context?: FileContext,
+      conversationHistory?: ChatMessage[]
+    ) => {
       if (!window.ollama) {
-        throw new Error('Ollama is not available');
+        const errorMsg = 'Ollama is not available';
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       setIsLoading(true);
@@ -127,17 +140,22 @@ export function useOllama() {
         });
       }
 
+      if (conversationHistory && conversationHistory.length > 0) {
+        messages.push(...conversationHistory);
+      }
+
       messages.push({ role: 'user', content: message });
 
       const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      return new Promise<void>((resolve, reject) => {
-        window.ollama?.streamChat(
+      return new Promise<{ cleanup: () => void }>((resolve, reject) => {
+        let cleanupFn: (() => void) | undefined;
+
+        cleanupFn = window.ollama?.streamChat(
           { requestId, messages, model: selectedModel || undefined },
           (chunk) => onChunk(chunk),
           () => {
             setIsLoading(false);
-            resolve();
           },
           (err) => {
             setIsLoading(false);
@@ -146,32 +164,37 @@ export function useOllama() {
             reject(new Error(errorMsg));
           }
         );
+
+        resolve({ cleanup: cleanupFn || (() => {}) });
       });
     },
     [selectedModel]
   );
 
-  const generateSearch = useCallback(
-    async (query: string, context?: FileContext) => {
-      if (!window.ollama) {
-        throw new Error('Ollama is not available');
-      }
+  const generateSearch = useCallback(async (query: string, context?: FileContext) => {
+    if (!window.ollama) {
+      const errorMsg = 'Ollama is not available';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
 
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const response = await window.ollama.generateSearch({ query, context });
-        if (!response.success || !response.parsedQuery) {
-          throw new Error(response.error || 'AI search failed');
-        }
-        return response.parsedQuery;
-      } finally {
-        setIsLoading(false);
+    try {
+      const response = await window.ollama.generateSearch({ query, context });
+      if (!response.success || !response.parsedQuery) {
+        throw new Error(response.error || 'AI search failed');
       }
-    },
-    []
-  );
+      return response.parsedQuery;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'AI search failed';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return {
     isAvailable,
