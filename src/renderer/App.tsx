@@ -5,6 +5,7 @@ import Toolbar from './components/Layout/Toolbar';
 import FilePreview from './components/FileView/FilePreview';
 import SearchModal from './components/Search/SearchModal';
 import { useFileSystem, FileItem } from './hooks/useFileSystem';
+import { useSearch } from './hooks/useSearch';
 
 const pathUtils = {
   join: (...parts: string[]): string => {
@@ -56,6 +57,14 @@ function App() {
     pasteFromClipboard,
     clearClipboard,
   } = useFileSystem(currentPath);
+
+  const { indexDirectory } = useSearch();
+
+  useEffect(() => {
+    if (currentPath) {
+      indexDirectory(currentPath);
+    }
+  }, [currentPath, indexDirectory]);
 
   useEffect(() => {
     if (window.filesystem?.homePath) {

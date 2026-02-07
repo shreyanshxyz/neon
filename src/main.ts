@@ -2,8 +2,13 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'url';
 import * as path from 'path';
 import fs from 'fs';
+import { FileIndexer } from './main/services/FileIndexer.js';
+import { QueryParser } from './main/services/QueryParser.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const fileIndexer = new FileIndexer();
+const queryParser = new QueryParser();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -152,6 +157,57 @@ ipcMain.handle('filesystem:createFolder', async (_, folderPath: string) => {
     const err = error as { message?: string };
     throw new Error(`Cannot create folder: ${err.message || 'Unknown error'}`);
   }
+});
+
+ipcMain.handle('search:indexDirectory', async (_, dirPath: string) => {
+  try {
+    await fileIndexer.indexDirectory(dirPath);
+    return {
+      success: true,
+      indexedCount: fileIndexer.getIndexedCount(),
+    };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err.message || 'Failed to index directory',
+    };
+  }
+});
+
+ipcMain.handle('search:query', async (_, query: string) => {
+  try {
+    const parsedQuery = queryParser.parse(query);
+    const results = fileIndexer.search(parsedQuery);
+    return {
+      success: true,
+      results,
+      parsedQuery,
+    };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err.message || 'Search failed',
+    };
+  }
+});
+
+ipcMain.handle('search:getStatus', () => {
+  return {
+    isIndexing: fileIndexer.isIndexing(),
+    indexedCount: fileIndexer.getIndexedCount(),
+  };
+});
+
+ipcMain.handle('search:clear', () => {
+  fileIndexer.clearIndex();
+  return { success: true };
+});
+
+ipcMain.handle('search:getSuggestions', (_, partial: string) => {
+  const suggestions = queryParser.getSuggestions(partial);
+  return { suggestions };
 });
 
 function createWindow(): void {

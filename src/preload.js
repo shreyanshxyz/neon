@@ -15,3 +15,11 @@ contextBridge.exposeInMainWorld('filesystem', {
   delete: (path) => ipcRenderer.invoke('filesystem:delete', path),
   createFolder: (path) => ipcRenderer.invoke('filesystem:createFolder', path),
 });
+
+contextBridge.exposeInMainWorld('search', {
+  indexDirectory: (path) => ipcRenderer.invoke('search:indexDirectory', path),
+  query: (query) => ipcRenderer.invoke('search:query', query),
+  getStatus: () => ipcRenderer.invoke('search:getStatus'),
+  clear: () => ipcRenderer.invoke('search:clear'),
+  getSuggestions: (partial) => ipcRenderer.invoke('search:getSuggestions', partial),
+});
