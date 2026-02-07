@@ -1,10 +1,28 @@
-import { Home, Monitor, Folder, Download, Image, Music, Video, HardDrive, Layout } from "lucide-react";
-import SidebarItem from "./SidebarItem";
-import { useEffect, useState } from "react";
+import {
+  Home,
+  Monitor,
+  Folder,
+  Download,
+  Image,
+  Music,
+  Video,
+  HardDrive,
+  Layout,
+} from 'lucide-react';
+import SidebarItem from './SidebarItem';
+import SmartFoldersPanel from '../SmartFolders/SmartFoldersPanel';
+import { useEffect, useState } from 'react';
+import { SmartFolder } from '../../hooks/useSmartFolders';
 
 interface PlacesPanelProps {
   currentPath: string;
   onPathChange: (path: string) => void;
+  smartFolders: SmartFolder[];
+  onSmartFolderSelect: (folder: SmartFolder) => void;
+  onCreateSmartFolder: () => void;
+  onEditSmartFolder: (folder: SmartFolder) => void;
+  onDeleteSmartFolder: (folder: SmartFolder) => void;
+  onRefreshSmartFolder: (folder: SmartFolder) => void;
 }
 
 const iconMap: Record<string, typeof Home> = {
@@ -18,7 +36,16 @@ const iconMap: Record<string, typeof Home> = {
   drive: HardDrive,
 };
 
-export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelProps) {
+export default function PlacesPanel({
+  currentPath,
+  onPathChange,
+  smartFolders,
+  onSmartFolderSelect,
+  onCreateSmartFolder,
+  onEditSmartFolder,
+  onDeleteSmartFolder,
+  onRefreshSmartFolder,
+}: PlacesPanelProps) {
   const [homePath, setHomePath] = useState(process.env.HOME || '/home/user');
 
   useEffect(() => {
@@ -35,18 +62,36 @@ export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelPr
   const videosPath = `${homePath}/Videos`;
 
   const sidebarPlaces = [
-    { id: "home", name: "Home", icon: "home", path: homePath, type: "place" as const },
-    { id: "desktop", name: "Desktop", icon: "desktop", path: desktopPath, type: "place" as const },
-    { id: "documents", name: "Documents", icon: "folder", path: documentsPath, type: "place" as const },
-    { id: "downloads", name: "Downloads", icon: "download", path: downloadsPath, type: "place" as const },
-    { id: "pictures", name: "Pictures", icon: "picture", path: picturesPath, type: "place" as const },
-    { id: "music", name: "Music", icon: "music", path: musicPath, type: "place" as const },
-    { id: "videos", name: "Videos", icon: "video", path: videosPath, type: "place" as const },
+    { id: 'home', name: 'Home', icon: 'home', path: homePath, type: 'place' as const },
+    { id: 'desktop', name: 'Desktop', icon: 'desktop', path: desktopPath, type: 'place' as const },
+    {
+      id: 'documents',
+      name: 'Documents',
+      icon: 'folder',
+      path: documentsPath,
+      type: 'place' as const,
+    },
+    {
+      id: 'downloads',
+      name: 'Downloads',
+      icon: 'download',
+      path: downloadsPath,
+      type: 'place' as const,
+    },
+    {
+      id: 'pictures',
+      name: 'Pictures',
+      icon: 'picture',
+      path: picturesPath,
+      type: 'place' as const,
+    },
+    { id: 'music', name: 'Music', icon: 'music', path: musicPath, type: 'place' as const },
+    { id: 'videos', name: 'Videos', icon: 'video', path: videosPath, type: 'place' as const },
   ];
 
   const sidebarStorage = [
-    { id: "root", name: "Root", icon: "drive", path: "/", type: "storage" as const },
-    { id: "home", name: "Home", icon: "drive", path: homePath, type: "storage" as const },
+    { id: 'root', name: 'Root', icon: 'drive', path: '/', type: 'storage' as const },
+    { id: 'home', name: 'Home', icon: 'drive', path: homePath, type: 'storage' as const },
   ];
 
   return (
@@ -76,6 +121,16 @@ export default function PlacesPanel({ currentPath, onPathChange }: PlacesPanelPr
             );
           })}
         </div>
+
+        <SmartFoldersPanel
+          folders={smartFolders}
+          currentPath={currentPath}
+          onSelect={onSmartFolderSelect}
+          onCreate={onCreateSmartFolder}
+          onEdit={onEditSmartFolder}
+          onDelete={onDeleteSmartFolder}
+          onRefresh={onRefreshSmartFolder}
+        />
 
         <div className="px-3 flex flex-col gap-1">
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1 px-3">
