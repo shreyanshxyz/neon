@@ -7,9 +7,17 @@ interface ToolbarProps {
   currentPath: string;
   onPathChange: (path: string) => void;
   selectedCount: number;
+  isSmartFolderView?: boolean;
+  smartFolderName?: string;
 }
 
-export default function Toolbar({ currentPath, onPathChange, selectedCount }: ToolbarProps) {
+export default function Toolbar({
+  currentPath,
+  onPathChange,
+  selectedCount,
+  isSmartFolderView = false,
+  smartFolderName,
+}: ToolbarProps) {
   const handleBack = () => {
     const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
@@ -25,6 +33,9 @@ export default function Toolbar({ currentPath, onPathChange, selectedCount }: To
       onPathChange((e.target as HTMLInputElement).value);
     }
   };
+
+  const displayPath =
+    isSmartFolderView && smartFolderName ? `Smart Folder: ${smartFolderName}` : currentPath;
 
   return (
     <header className="h-12 bg-bg-secondary border-b border-border flex items-center px-4 gap-2">
@@ -50,12 +61,18 @@ export default function Toolbar({ currentPath, onPathChange, selectedCount }: To
       </div>
 
       <div className="flex-1 mx-4">
-        <Input
-          value={currentPath}
-          onChange={handlePathChange}
-          onKeyDown={handleKeyDown}
-          className="w-full"
-        />
+        {isSmartFolderView ? (
+          <div className="w-full px-3 py-2 bg-accent-primary/10 border border-accent-primary/30 rounded text-text-primary text-sm font-medium">
+            {displayPath}
+          </div>
+        ) : (
+          <Input
+            value={displayPath}
+            onChange={handlePathChange}
+            onKeyDown={handleKeyDown}
+            className="w-full"
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-1">

@@ -116,6 +116,14 @@ export function useFileSystem(initialPath: string) {
 
   const loadDirectory = useCallback(
     async (dirPath: string) => {
+      if (dirPath.startsWith('smartfolder://')) {
+        setFiles([]);
+        setLoading(false);
+        setError(null);
+        setCurrentPath(dirPath);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
