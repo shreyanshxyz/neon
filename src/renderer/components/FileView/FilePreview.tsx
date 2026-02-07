@@ -5,16 +5,23 @@ import { FileText, X, File, Image, Binary, AlertCircle, Loader2 } from 'lucide-r
 interface FilePreviewProps {
   file: FileItem | null;
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   readFileContent: (path: string) => Promise<{
     content: string | null;
     isBinary: boolean;
     size: number;
     error: string | null;
   }>;
+  showClose?: boolean;
 }
 
-export default function FilePreview({ file, isOpen, onClose, readFileContent }: FilePreviewProps) {
+export default function FilePreview({
+  file,
+  isOpen,
+  onClose,
+  readFileContent,
+  showClose = true,
+}: FilePreviewProps) {
   const [content, setContent] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,7 +69,7 @@ export default function FilePreview({ file, isOpen, onClose, readFileContent }: 
   if (!isOpen || !file) return null;
 
   return (
-    <div className="w-80 bg-bg-secondary border-l border-border flex flex-col shrink-0">
+    <div className="w-full bg-bg-secondary flex flex-col shrink-0">
       <div className="flex items-center justify-between p-3 border-b border-border">
         <div className="flex items-center gap-2">
           {file.type === 'folder' ? (
@@ -76,9 +83,11 @@ export default function FilePreview({ file, isOpen, onClose, readFileContent }: 
             {file.name}
           </span>
         </div>
-        <button onClick={onClose} className="p-1 hover:bg-bg-hover rounded transition-colors">
-          <X className="w-4 h-4 text-text-muted" />
-        </button>
+        {showClose && onClose && (
+          <button onClick={onClose} className="p-1 hover:bg-bg-hover rounded transition-colors">
+            <X className="w-4 h-4 text-text-muted" />
+          </button>
+        )}
       </div>
 
       <div className="p-3 border-b border-border">

@@ -5,12 +5,16 @@ import fs from 'fs';
 import { FileIndexer } from './main/services/FileIndexer.js';
 import { QueryParser } from './main/services/QueryParser.js';
 import { SmartFolderService } from './main/services/SmartFolderService.js';
+import { OllamaService } from './main/services/OllamaService.js';
+import type { ParsedQuery } from './main/services/FileIndexer.js';
+import type { ChatMessage, FileContext } from './main/services/OllamaService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const fileIndexer = new FileIndexer();
 const queryParser = new QueryParser();
 const smartFolderService = new SmartFolderService();
+const ollamaService = new OllamaService();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -195,6 +199,23 @@ ipcMain.handle('search:query', async (_, query: string) => {
   }
 });
 
+ipcMain.handle('search:queryParsed', async (_, parsedQuery: ParsedQuery) => {
+  try {
+    const results = fileIndexer.search(parsedQuery);
+    return {
+      success: true,
+      results,
+      parsedQuery,
+    };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err.message || 'Search failed',
+    };
+  }
+});
+
 ipcMain.handle('search:getStatus', () => {
   return {
     isIndexing: fileIndexer.isIndexing(),
@@ -282,6 +303,62 @@ ipcMain.handle('smartFolders:getCount', async () => {
     return { success: false, error: err.message || 'Failed to get count' };
   }
 });
+
+ipcMain.handle('ollama:check', async () => {
+  const status = await ollamaService.checkConnection();
+  return {
+    available: status.available,
+    models: status.models,
+    defaultModel: ollamaService.getFallbackModel(status.models),
+  };
+});
+
+ipcMain.handle('ollama:chat', async (_, payload: { messages: ChatMessage[]; model?: string }) => {
+  try {
+    const response = await ollamaService.chat(payload.messages, payload.model);
+    return { response };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { response: '', error: err.message || 'Chat failed' };
+  }
+});
+
+ipcMain.on(
+  'ollama:streamChat',
+  async (event, payload: { requestId: string; messages: ChatMessage[]; model?: string }) => {
+    const { requestId, messages, model } = payload;
+    try {
+      for await (const chunk of ollamaService.streamChat(messages, model)) {
+        if (event.sender.isDestroyed()) break;
+        event.sender.send('ollama:streamChat:chunk', { requestId, chunk });
+      }
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('ollama:streamChat:done', { requestId });
+      }
+    } catch (error: unknown) {
+      if (!event.sender.isDestroyed()) {
+        const err = error as { message?: string };
+        event.sender.send('ollama:streamChat:error', {
+          requestId,
+          error: err.message || 'Streaming failed',
+        });
+      }
+    }
+  }
+);
+
+ipcMain.handle(
+  'ollama:generateSearch',
+  async (_, payload: { query: string; context?: FileContext }) => {
+    try {
+      const parsedQuery = await ollamaService.generateSearchQuery(payload.query, payload.context);
+      return { success: true, parsedQuery };
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return { success: false, error: err.message || 'AI search failed' };
+    }
+  }
+);
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({

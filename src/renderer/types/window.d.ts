@@ -93,6 +93,7 @@ interface SearchSuggestionsResponse {
 interface SearchAPI {
   indexDirectory(path: string): Promise<SearchIndexResponse>;
   query(query: string): Promise<SearchQueryResponse>;
+  queryParsed(parsedQuery: ParsedQuery): Promise<SearchQueryResponse>;
   getStatus(): Promise<SearchStatus>;
   clear(): Promise<{ success: boolean }>;
   getSuggestions(partial: string): Promise<SearchSuggestionsResponse>;
@@ -156,8 +157,54 @@ interface SmartFoldersAPI {
   getCount(): Promise<SmartFolderCountResponse>;
 }
 
+interface OllamaCheckResponse {
+  available: boolean;
+  models: string[];
+  defaultModel: string;
+}
+
+interface OllamaChatResponse {
+  response: string;
+  error?: string;
+}
+
+interface OllamaGenerateSearchResponse {
+  success: boolean;
+  parsedQuery?: ParsedQuery;
+  error?: string;
+}
+
+interface OllamaChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface FileContext {
+  path: string;
+  name: string;
+  content?: string;
+  size?: number;
+  modified?: string;
+}
+
+interface OllamaAPI {
+  check(): Promise<OllamaCheckResponse>;
+  chat(payload: { messages: OllamaChatMessage[]; model?: string }): Promise<OllamaChatResponse>;
+  generateSearch(payload: {
+    query: string;
+    context?: FileContext;
+  }): Promise<OllamaGenerateSearchResponse>;
+  streamChat(
+    payload: { requestId: string; messages: OllamaChatMessage[]; model?: string },
+    onChunk?: (chunk: string) => void,
+    onDone?: () => void,
+    onError?: (error: string) => void
+  ): () => void;
+}
+
 interface Window {
   filesystem: FileSystemAPI;
   search: SearchAPI;
   smartFolders: SmartFoldersAPI;
+  ollama?: OllamaAPI;
 }

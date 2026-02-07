@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar/PlacesPanel';
 import FileList from './components/FileView/FileList';
 import Toolbar from './components/Layout/Toolbar';
-import FilePreview from './components/FileView/FilePreview';
+import RightPanel from './components/RightPanel/RightPanel';
 import SearchModal from './components/Search/SearchModal';
 import SmartFolderDialog from './components/SmartFolders/SmartFolderDialog';
 import { useFileSystem, FileItem } from './hooks/useFileSystem';
@@ -30,7 +30,7 @@ function App() {
   const [currentPath, setCurrentPath] = useState(process.env.HOME || '/home/user');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat'>('preview');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     isOpen: boolean;
@@ -106,6 +106,11 @@ function App() {
       if (isCtrl && e.key === 'f') {
         e.preventDefault();
         setIsSearchOpen(true);
+      }
+
+      if (isCtrl && e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setRightPanelTab((prev) => (prev === 'chat' ? 'preview' : 'chat'));
       }
     };
 
@@ -246,7 +251,7 @@ function App() {
         handleNavigate(file.path);
       } else {
         setPreviewFile(file);
-        setIsPreviewOpen(true);
+        setRightPanelTab('preview');
       }
     },
     [smartFolderResults, files, isSmartFolderView, handleNavigate]
@@ -254,12 +259,7 @@ function App() {
 
   const handlePreview = useCallback((file: FileItem) => {
     setPreviewFile(file);
-    setIsPreviewOpen(true);
-  }, []);
-
-  const handleClosePreview = useCallback(() => {
-    setIsPreviewOpen(false);
-    setPreviewFile(null);
+    setRightPanelTab('preview');
   }, []);
 
   const handleCopy = useCallback(
@@ -354,7 +354,7 @@ function App() {
     setSelectedFiles([file.id]);
     if (file.type === 'file') {
       setPreviewFile(file);
-      setIsPreviewOpen(true);
+      setRightPanelTab('preview');
     }
   }, []);
 
@@ -367,6 +367,7 @@ function App() {
 
   const displayedFiles = isSmartFolderView ? smartFolderResults : files;
   const displayedLoading = isSmartFolderView ? smartFolderLoading : loading;
+  const selectedFileItems = displayedFiles.filter((file) => selectedFiles.includes(file.id));
 
   return (
     <div className="app-container">
@@ -409,10 +410,12 @@ function App() {
           onFileDrop={handleFileDrop}
         />
       </main>
-      <FilePreview
+      <RightPanel
+        tab={rightPanelTab}
+        onTabChange={setRightPanelTab}
         file={previewFile}
-        isOpen={isPreviewOpen}
-        onClose={handleClosePreview}
+        selectedFiles={selectedFileItems}
+        currentPath={currentPath}
         readFileContent={readFileContent}
       />
       <SearchModal
