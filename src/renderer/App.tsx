@@ -4,8 +4,10 @@ import FileList from './components/FileView/FileList';
 import Toolbar from './components/Layout/Toolbar';
 import FilePreview from './components/FileView/FilePreview';
 import SearchModal from './components/Search/SearchModal';
+import SmartFolderDialog from './components/SmartFolders/SmartFolderDialog';
 import { useFileSystem, FileItem } from './hooks/useFileSystem';
 import { useSearch } from './hooks/useSearch';
+import { useSmartFolders, SmartFolder, ParsedQuery } from './hooks/useSmartFolders';
 
 const pathUtils = {
   join: (...parts: string[]): string => {
@@ -40,6 +42,15 @@ function App() {
     name: string;
   }>({ isOpen: false, name: '' });
 
+  const [smartFolderDialog, setSmartFolderDialog] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'edit';
+    folder: SmartFolder | null;
+  }>({ isOpen: false, mode: 'create', folder: null });
+  const [isSmartFolderView, setIsSmartFolderView] = useState(false);
+  const [currentSmartFolder, setCurrentSmartFolder] = useState<SmartFolder | null>(null);
+  const [smartFolderResults, setSmartFolderResults] = useState<FileItem[]>([]);
+
   const {
     files,
     loading,
@@ -59,9 +70,18 @@ function App() {
   } = useFileSystem(currentPath);
 
   const { indexDirectory } = useSearch();
+  const {
+    folders,
+    loading: smartFoldersLoading,
+    createFolder: createSmartFolder,
+    updateFolder,
+    deleteFolder,
+    executeFolder,
+    loadFolders,
+  } = useSmartFolders();
 
   useEffect(() => {
-    if (currentPath) {
+    if (currentPath && !currentPath.startsWith('smartfolder://')) {
       indexDirectory(currentPath);
     }
   }, [currentPath, indexDirectory]);
@@ -95,15 +115,97 @@ function App() {
   const handleNavigate = useCallback(
     (path: string) => {
       setSelectedFiles([]);
-      setCurrentPath(path);
-      navigate(path);
+
+      if (path.startsWith('smartfolder://')) {
+        const folderId = path.replace('smartfolder://', '');
+        const folder = folders.find((f) => f.id === folderId);
+        if (folder) {
+          handleSmartFolderSelect(folder);
+        }
+      } else {
+        setIsSmartFolderView(false);
+        setCurrentSmartFolder(null);
+        setCurrentPath(path);
+        navigate(path);
+      }
     },
-    [navigate]
+    [navigate, folders]
+  );
+
+  const handleSmartFolderSelect = useCallback(
+    async (folder: SmartFolder) => {
+      setIsSmartFolderView(true);
+      setCurrentSmartFolder(folder);
+      setCurrentPath(`smartfolder://${folder.id}`);
+      setSelectedFiles([]);
+
+      const result = await executeFolder(folder.id);
+
+      if (result.success && result.results) {
+        const fileItems: FileItem[] = result.results.map((r) => ({
+          id: r.file.path,
+          name: r.file.name,
+          type: r.file.extension === '' ? 'folder' : 'file',
+          path: r.file.path,
+          size: r.file.size,
+          modified: r.file.modified,
+          icon: getFileIcon(r.file.name, r.file.extension === ''),
+          extension: r.file.extension,
+          hidden: r.file.name.startsWith('.'),
+        }));
+        setSmartFolderResults(fileItems);
+      } else {
+        setSmartFolderResults([]);
+      }
+    },
+    [executeFolder]
+  );
+
+  const handleCreateSmartFolder = useCallback(
+    async (name: string, query: string, parsedQuery: ParsedQuery) => {
+      await createSmartFolder(name, query, parsedQuery);
+    },
+    [createSmartFolder]
+  );
+
+  const handleUpdateSmartFolder = useCallback(
+    async (name: string, query: string, parsedQuery: ParsedQuery) => {
+      if (smartFolderDialog.folder) {
+        await updateFolder(smartFolderDialog.folder.id, {
+          name,
+          query,
+          parsedQuery,
+        });
+      }
+    },
+    [updateFolder, smartFolderDialog.folder]
+  );
+
+  const handleDeleteSmartFolder = useCallback(
+    async (folder: SmartFolder) => {
+      if (confirm(`Are you sure you want to delete "${folder.name}"?`)) {
+        await deleteFolder(folder.id);
+        if (currentSmartFolder?.id === folder.id) {
+          handleNavigate(homePath);
+        }
+      }
+    },
+    [deleteFolder, currentSmartFolder, homePath, handleNavigate]
+  );
+
+  const handleRefreshSmartFolder = useCallback(
+    async (folder: SmartFolder) => {
+      if (currentSmartFolder?.id === folder.id) {
+        await handleSmartFolderSelect(folder);
+      }
+    },
+    [currentSmartFolder, handleSmartFolderSelect]
   );
 
   const handleFileClick = useCallback(
     (fileId: string, isCtrlClick: boolean) => {
-      const file = files.find((f) => f.id === fileId);
+      const fileList = isSmartFolderView ? smartFolderResults : files;
+      const file = fileList.find((f) => f.id === fileId);
       if (!file) return;
 
       if (isCtrlClick) {
@@ -114,12 +216,13 @@ function App() {
         setSelectedFiles([fileId]);
       }
     },
-    [files]
+    [files, smartFolderResults, isSmartFolderView]
   );
 
   const handleFileDoubleClick = useCallback(
     (fileId: string) => {
-      const file = files.find((f) => f.id === fileId);
+      const fileList = isSmartFolderView ? smartFolderResults : files;
+      const file = fileList.find((f) => f.id === fileId);
       if (!file) return;
 
       if (file.type === 'folder') {
@@ -129,7 +232,7 @@ function App() {
         setIsPreviewOpen(true);
       }
     },
-    [files, handleNavigate]
+    [smartFolderResults, files, isSmartFolderView, handleNavigate]
   );
 
   const handlePreview = useCallback((file: FileItem) => {
@@ -168,9 +271,12 @@ function App() {
       if (confirm(`Are you sure you want to move "${file.name}" to trash?`)) {
         await deleteFile(file.path);
         setSelectedFiles([]);
+        if (isSmartFolderView && currentSmartFolder) {
+          await handleRefreshSmartFolder(currentSmartFolder);
+        }
       }
     },
-    [deleteFile]
+    [deleteFile, isSmartFolderView, currentSmartFolder, handleRefreshSmartFolder]
   );
 
   const handleRename = useCallback((file: FileItem) => {
@@ -193,7 +299,10 @@ function App() {
     await moveFile(oldPath, newPath);
     setRenameDialog({ isOpen: false, file: null, newName: '' });
     setSelectedFiles([]);
-  }, [renameDialog, moveFile]);
+    if (isSmartFolderView && currentSmartFolder) {
+      await handleRefreshSmartFolder(currentSmartFolder);
+    }
+  }, [renameDialog, moveFile, isSmartFolderView, currentSmartFolder, handleRefreshSmartFolder]);
 
   const handleCreateFolder = useCallback(() => {
     setNewFolderDialog({ isOpen: true, name: 'New Folder' });
@@ -217,8 +326,11 @@ function App() {
       }
 
       setSelectedFiles([]);
+      if (isSmartFolderView && currentSmartFolder) {
+        await handleRefreshSmartFolder(currentSmartFolder);
+      }
     },
-    [moveFile]
+    [moveFile, isSmartFolderView, currentSmartFolder, handleRefreshSmartFolder]
   );
 
   const handleSearchFileSelect = useCallback((file: FileItem) => {
@@ -236,18 +348,34 @@ function App() {
     [handleNavigate]
   );
 
+  const displayedFiles = isSmartFolderView ? smartFolderResults : files;
+  const displayedLoading = isSmartFolderView ? false : loading;
+
   return (
     <div className="app-container">
-      <Sidebar currentPath={currentPath} onPathChange={handleNavigate} />
+      <Sidebar
+        currentPath={currentPath}
+        onPathChange={handleNavigate}
+        smartFolders={folders}
+        onSmartFolderSelect={handleSmartFolderSelect}
+        onCreateSmartFolder={() =>
+          setSmartFolderDialog({ isOpen: true, mode: 'create', folder: null })
+        }
+        onEditSmartFolder={(folder) => setSmartFolderDialog({ isOpen: true, mode: 'edit', folder })}
+        onDeleteSmartFolder={handleDeleteSmartFolder}
+        onRefreshSmartFolder={handleRefreshSmartFolder}
+      />
       <main className="main-content">
         <Toolbar
           currentPath={currentPath}
           onPathChange={handleNavigate}
           selectedCount={selectedFiles.length}
+          isSmartFolderView={isSmartFolderView}
+          smartFolderName={currentSmartFolder?.name}
         />
         <FileList
-          files={files}
-          loading={loading}
+          files={displayedFiles}
+          loading={displayedLoading}
           error={error}
           selectedFiles={selectedFiles}
           currentPath={currentPath}
@@ -277,6 +405,17 @@ function App() {
         onClose={() => setIsSearchOpen(false)}
         onFileSelect={handleSearchFileSelect}
         onNavigateToFolder={handleSearchNavigate}
+      />
+
+      <SmartFolderDialog
+        isOpen={smartFolderDialog.isOpen}
+        onClose={() => setSmartFolderDialog({ isOpen: false, mode: 'create', folder: null })}
+        onSave={
+          smartFolderDialog.mode === 'create' ? handleCreateSmartFolder : handleUpdateSmartFolder
+        }
+        folder={smartFolderDialog.folder}
+        title={smartFolderDialog.mode === 'create' ? 'Create Smart Folder' : 'Edit Smart Folder'}
+        existingFolders={folders}
       />
 
       {renameDialog.isOpen && (
@@ -338,6 +477,40 @@ function App() {
       )}
     </div>
   );
+}
+
+function getFileIcon(name: string, isDirectory: boolean): string {
+  if (isDirectory) return 'folder';
+
+  const parts = name.split('.');
+  const ext = parts.length > 1 ? (parts.pop()?.toLowerCase() ?? '') : '';
+  const iconMap: Record<string, string> = {
+    jpg: 'image',
+    jpeg: 'image',
+    png: 'image',
+    gif: 'image',
+    svg: 'image',
+    webp: 'image',
+    mp3: 'audio',
+    wav: 'audio',
+    mp4: 'video',
+    pdf: 'pdf',
+    doc: 'document',
+    docx: 'document',
+    txt: 'text',
+    zip: 'archive',
+    js: 'code',
+    ts: 'code',
+    jsx: 'code',
+    tsx: 'code',
+    py: 'code',
+    java: 'code',
+    html: 'web',
+    css: 'web',
+    json: 'data',
+  };
+
+  return iconMap[ext] || 'file';
 }
 
 export default App;
