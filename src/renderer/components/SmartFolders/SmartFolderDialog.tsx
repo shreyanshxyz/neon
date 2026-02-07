@@ -50,6 +50,8 @@ export default function SmartFolderDialog({
           }
         } catch (err) {
           console.error('Failed to parse query:', err);
+          setParsedQuery(null);
+          setError('Failed to parse query. Please try a different search term.');
         } finally {
           setIsValidating(false);
         }
