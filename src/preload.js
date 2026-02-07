@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('filesystem', {
 contextBridge.exposeInMainWorld('search', {
   indexDirectory: (path) => ipcRenderer.invoke('search:indexDirectory', path),
   query: (query) => ipcRenderer.invoke('search:query', query),
+  queryParsed: (parsedQuery) => ipcRenderer.invoke('search:queryParsed', parsedQuery),
   getStatus: () => ipcRenderer.invoke('search:getStatus'),
   clear: () => ipcRenderer.invoke('search:clear'),
   getSuggestions: (partial) => ipcRenderer.invoke('search:getSuggestions', partial),
@@ -31,4 +32,42 @@ contextBridge.exposeInMainWorld('smartFolders', {
   delete: (id) => ipcRenderer.invoke('smartFolders:delete', id),
   execute: (id) => ipcRenderer.invoke('smartFolders:execute', id),
   getCount: () => ipcRenderer.invoke('smartFolders:getCount'),
+});
+
+contextBridge.exposeInMainWorld('ollama', {
+  check: () => ipcRenderer.invoke('ollama:check'),
+  chat: (payload) => ipcRenderer.invoke('ollama:chat', payload),
+  generateSearch: (payload) => ipcRenderer.invoke('ollama:generateSearch', payload),
+  streamChat: (payload, onChunk, onDone, onError) => {
+    const requestId = payload.requestId;
+
+    const handleChunk = (_event, data) => {
+      if (data.requestId === requestId) {
+        onChunk?.(data.chunk);
+      }
+    };
+
+    const handleError = (_event, data) => {
+      if (data.requestId === requestId) {
+        ipcRenderer.removeListener('ollama:streamChat:chunk', handleChunk);
+        ipcRenderer.removeListener('ollama:streamChat:done', handleDone);
+        ipcRenderer.removeListener('ollama:streamChat:error', handleError);
+        onError?.(data.error);
+      }
+    };
+
+    const handleDone = (_event, data) => {
+      if (data.requestId === requestId) {
+        ipcRenderer.removeListener('ollama:streamChat:chunk', handleChunk);
+        ipcRenderer.removeListener('ollama:streamChat:done', handleDone);
+        ipcRenderer.removeListener('ollama:streamChat:error', handleError);
+        onDone?.();
+      }
+    };
+
+    ipcRenderer.on('ollama:streamChat:chunk', handleChunk);
+    ipcRenderer.on('ollama:streamChat:done', handleDone);
+    ipcRenderer.on('ollama:streamChat:error', handleError);
+    ipcRenderer.send('ollama:streamChat', payload);
+  },
 });
