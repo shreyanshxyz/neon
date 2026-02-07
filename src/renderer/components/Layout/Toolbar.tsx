@@ -119,10 +119,7 @@ export default function Toolbar({
 
       <div className="flex items-center gap-1">
         <button
-          onClick={() => {
-            const path = window.location.pathname.replace('/home/shreyanshxyz/Dev/neon', '');
-            onPathChange(path || '/');
-          }}
+          onClick={() => onPathChange(currentPath)}
           className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded"
         >
           <RefreshCw className="w-4 h-4" />
