@@ -70,19 +70,16 @@ fn resize_to_thumbnail(image: DynamicImage, max_width: u32, max_height: u32) -> 
   image.resize(new_width, new_height, FilterType::Lanczos3)
 }
 
-fn write_result(mut data: Vec<u8>, mime_type: &str) {
-  let mut mime = mime_type.as_bytes().to_vec();
-  mime.push(0);
-  let data_ptr = data.as_mut_ptr();
+fn write_result(data: Vec<u8>, mime_type: &str) {
+  let mime = mime_type.as_bytes().to_vec();
+  let data_ptr = data.as_ptr() as i32;
   let data_len = data.len() as i32;
   let mime_ptr = mime.as_ptr() as i32;
 
   unsafe {
-    host_return_result(data_ptr as i32, data_len, mime_ptr);
+    host_return_result(data_ptr, data_len, mime_ptr);
   }
-
-  std::mem::forget(data);
-  std::mem::forget(mime);
+  
 }
 
 unsafe fn slice_from_raw<'a>(ptr: i32, len: i32) -> &'a [u8] {
