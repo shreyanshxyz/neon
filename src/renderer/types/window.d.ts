@@ -199,7 +199,7 @@ interface OllamaAPI {
     onChunk?: (chunk: string) => void,
     onDone?: () => void,
     onError?: (error: string) => void
-  ): void;
+  ): () => void;
 }
 
 interface Window {
