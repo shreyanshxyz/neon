@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, RefreshCw, AlertCircle } from 'lucide-react';
 import { FileItem } from '../../hooks/useFileSystem';
 import { useOllama } from '../../hooks/useOllama';
@@ -42,6 +42,12 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
   const [input, setInput] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const filteredMentions = useMemo(() => {
     if (!mentionQuery) return selectedFiles;
@@ -151,20 +157,33 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
 
     try {
       const context = await resolveContexts();
-      await streamMessage(trimmed, (chunk) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessage.id
-              ? { ...msg, content: msg.content + chunk, isStreaming: true }
-              : msg
-          )
-        );
-      }, context);
+
+      const conversationHistory = messages
+        .filter((msg) => msg.id !== assistantMessage.id && msg.role !== 'system')
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
+
+      const { cleanup } = await streamMessage(
+        trimmed,
+        (chunk) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessage.id
+                ? { ...msg, content: msg.content + chunk, isStreaming: true }
+                : msg
+            )
+          );
+        },
+        context,
+        conversationHistory
+      );
+
+      (assistantMessage as ChatEntry & { cleanup?: () => void }).cleanup = cleanup;
 
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessage.id ? { ...msg, isStreaming: false } : msg
-        )
+        prev.map((msg) => (msg.id === assistantMessage.id ? { ...msg, isStreaming: false } : msg))
       );
     } catch (err) {
       setMessages((prev) =>
@@ -228,7 +247,7 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-3 space-y-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto p-3 space-y-3">
         {messages.length === 0 ? (
           <div className="text-center text-text-muted text-sm mt-6 space-y-2">
             <p>Ask about files, summaries, or code insights.</p>
@@ -247,6 +266,7 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
             />
           ))
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="border-t border-border p-3">
@@ -264,16 +284,12 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
               }
             }}
             placeholder={
-              isAvailable
-                ? 'Ask something... Use @ to mention selected files'
-                : 'Ollama is offline'
+              isAvailable ? 'Ask something... Use @ to mention selected files' : 'Ollama is offline'
             }
             className="w-full min-h-[64px] max-h-32 resize-none bg-bg-primary border border-border rounded p-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
             disabled={!isAvailable}
           />
-          {showMentions && (
-            <FileMention files={filteredMentions} onSelect={handleMentionSelect} />
-          )}
+          {showMentions && <FileMention files={filteredMentions} onSelect={handleMentionSelect} />}
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-xs text-text-muted">
@@ -299,8 +315,22 @@ function extractMentions(input: string, files: FileItem[]): FileItem[] {
   const mentionMatches = Array.from(input.matchAll(/@([^\s]+)/g)).map((match) => match[1]);
   if (mentionMatches.length === 0) return [];
 
-  const byName = new Map(files.map((file) => [file.name.toLowerCase(), file]));
+  const byName = new Map<string, FileItem>();
+  const byPath = new Map<string, FileItem>();
+
+  files.forEach((file) => {
+    byName.set(file.name.toLowerCase(), file);
+    const basename = file.path.split('/').pop()?.toLowerCase();
+    if (basename && basename !== file.name.toLowerCase()) {
+      byName.set(basename, file);
+    }
+    byPath.set(file.path.toLowerCase(), file);
+  });
+
   return mentionMatches
-    .map((name) => byName.get(name.toLowerCase()))
+    .map((mention) => {
+      const lowerMention = mention.toLowerCase();
+      return byName.get(lowerMention) || byPath.get(lowerMention);
+    })
     .filter((file): file is FileItem => Boolean(file));
 }
