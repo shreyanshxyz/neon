@@ -50,6 +50,7 @@ function App() {
   const [isSmartFolderView, setIsSmartFolderView] = useState(false);
   const [currentSmartFolder, setCurrentSmartFolder] = useState<SmartFolder | null>(null);
   const [smartFolderResults, setSmartFolderResults] = useState<FileItem[]>([]);
+  const [smartFolderLoading, setSmartFolderLoading] = useState(false);
 
   const {
     files,
@@ -112,6 +113,40 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleSmartFolderSelect = useCallback(
+    async (folder: SmartFolder) => {
+      setIsSmartFolderView(true);
+      setCurrentSmartFolder(folder);
+      setCurrentPath(`smartfolder://${folder.id}`);
+      setSelectedFiles([]);
+      setSmartFolderLoading(true);
+
+      try {
+        const result = await executeFolder(folder.id);
+
+        if (result.success && result.results) {
+          const fileItems: FileItem[] = result.results.map((r) => ({
+            id: r.file.path,
+            name: r.file.name,
+            type: 'file',
+            path: r.file.path,
+            size: r.file.size,
+            modified: r.file.modified,
+            icon: getFileIcon(r.file.name, false),
+            extension: r.file.extension,
+            hidden: r.file.name.startsWith('.'),
+          }));
+          setSmartFolderResults(fileItems);
+        } else {
+          setSmartFolderResults([]);
+        }
+      } finally {
+        setSmartFolderLoading(false);
+      }
+    },
+    [executeFolder]
+  );
+
   const handleNavigate = useCallback(
     (path: string) => {
       setSelectedFiles([]);
@@ -129,41 +164,16 @@ function App() {
         navigate(path);
       }
     },
-    [navigate, folders]
-  );
-
-  const handleSmartFolderSelect = useCallback(
-    async (folder: SmartFolder) => {
-      setIsSmartFolderView(true);
-      setCurrentSmartFolder(folder);
-      setCurrentPath(`smartfolder://${folder.id}`);
-      setSelectedFiles([]);
-
-      const result = await executeFolder(folder.id);
-
-      if (result.success && result.results) {
-        const fileItems: FileItem[] = result.results.map((r) => ({
-          id: r.file.path,
-          name: r.file.name,
-          type: r.file.extension === '' ? 'folder' : 'file',
-          path: r.file.path,
-          size: r.file.size,
-          modified: r.file.modified,
-          icon: getFileIcon(r.file.name, r.file.extension === ''),
-          extension: r.file.extension,
-          hidden: r.file.name.startsWith('.'),
-        }));
-        setSmartFolderResults(fileItems);
-      } else {
-        setSmartFolderResults([]);
-      }
-    },
-    [executeFolder]
+    [navigate, folders, handleSmartFolderSelect]
   );
 
   const handleCreateSmartFolder = useCallback(
     async (name: string, query: string, parsedQuery: ParsedQuery) => {
-      await createSmartFolder(name, query, parsedQuery);
+      const result = await createSmartFolder(name, query, parsedQuery);
+      if (!result.success) {
+        console.error('Failed to create smart folder:', result.error);
+      }
+      return result;
     },
     [createSmartFolder]
   );
@@ -171,14 +181,21 @@ function App() {
   const handleUpdateSmartFolder = useCallback(
     async (name: string, query: string, parsedQuery: ParsedQuery) => {
       if (smartFolderDialog.folder) {
-        await updateFolder(smartFolderDialog.folder.id, {
+        const result = await updateFolder(smartFolderDialog.folder.id, {
           name,
           query,
           parsedQuery,
         });
+
+        if (result.success && currentSmartFolder?.id === smartFolderDialog.folder.id) {
+          const updatedFolder = { ...currentSmartFolder, name, query, parsedQuery };
+          await handleSmartFolderSelect(updatedFolder);
+        }
+
+        return result;
       }
     },
-    [updateFolder, smartFolderDialog.folder]
+    [updateFolder, smartFolderDialog.folder, currentSmartFolder, handleSmartFolderSelect]
   );
 
   const handleDeleteSmartFolder = useCallback(
@@ -349,7 +366,7 @@ function App() {
   );
 
   const displayedFiles = isSmartFolderView ? smartFolderResults : files;
-  const displayedLoading = isSmartFolderView ? false : loading;
+  const displayedLoading = isSmartFolderView ? smartFolderLoading : loading;
 
   return (
     <div className="app-container">
