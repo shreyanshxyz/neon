@@ -10,26 +10,41 @@ interface FileMentionProps {
 export default function FileMention({ files, onSelect }: FileMentionProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  if (files.length === 0) return null;
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [files.length]);
 
   useEffect(() => {
+    if (files.length === 0) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (files.length === 0) return;
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
 
       switch (e.key) {
         case 'ArrowDown':
-          e.preventDefault();
-          setSelectedIndex((prev) => (prev + 1) % files.length);
+          if (isInput) {
+            e.stopPropagation();
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev + 1) % files.length);
+          }
           break;
         case 'ArrowUp':
-          e.preventDefault();
-          setSelectedIndex((prev) => (prev - 1 + files.length) % files.length);
+          if (isInput) {
+            e.stopPropagation();
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev - 1 + files.length) % files.length);
+          }
           break;
         case 'Enter':
-          e.preventDefault();
-          onSelect(files[selectedIndex]);
+          if (isInput) {
+            e.stopPropagation();
+            e.preventDefault();
+            onSelect(files[selectedIndex]);
+          }
           break;
         case 'Escape':
+          e.stopPropagation();
           e.preventDefault();
           break;
       }
@@ -39,9 +54,7 @@ export default function FileMention({ files, onSelect }: FileMentionProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [files, selectedIndex, onSelect]);
 
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [files.length]);
+  if (files.length === 0) return null;
 
   return (
     <div className="absolute left-0 right-0 top-full mt-2 bg-bg-secondary border border-border rounded-lg shadow-lg max-h-48 overflow-auto z-10">
