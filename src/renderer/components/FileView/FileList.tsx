@@ -11,6 +11,7 @@ interface FileListProps {
   selectedFiles: string[];
   currentPath: string;
   hasClipboard: boolean;
+  viewMode?: 'grid' | 'list';
   onFileClick: (fileId: string, isCtrlClick: boolean) => void;
   onFileDoubleClick: (fileId: string) => void;
   onCopy: (file: FileItemType) => void;
@@ -30,6 +31,7 @@ export default function FileList({
   selectedFiles,
   currentPath,
   hasClipboard,
+  viewMode = 'list',
   onFileClick,
   onFileDoubleClick,
   onCopy,
@@ -179,15 +181,17 @@ export default function FileList({
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center px-4 py-2 bg-bg-tertiary/50 border-b border-border text-xs font-medium text-text-muted uppercase tracking-wider">
-          <div className="flex-1">Name</div>
-          <div className="w-24 text-right">Size</div>
-          <div className="w-32 text-right">Modified</div>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center text-text-muted">
-          <Loader2 className="w-8 h-8 animate-spin mb-2" />
-          <p>Loading...</p>
+      <div className="flex-1 flex flex-col overflow-hidden bg-terminal-bg">
+        {viewMode === 'list' && (
+          <div className="flex items-center px-4 py-2 bg-terminal-surface border-b border-terminal-border text-xs font-terminal text-terminal-muted uppercase tracking-wider">
+            <div className="flex-1">Name</div>
+            <div className="w-24 text-right">Size</div>
+            <div className="w-40 text-right">Modified</div>
+          </div>
+        )}
+        <div className="flex-1 flex flex-col items-center justify-center text-terminal-muted font-terminal">
+          <Loader2 className="w-8 h-8 animate-spin mb-2 text-terminal-green" />
+          <p>loading...</p>
         </div>
       </div>
     );
@@ -195,15 +199,17 @@ export default function FileList({
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center px-4 py-2 bg-bg-tertiary/50 border-b border-border text-xs font-medium text-text-muted uppercase tracking-wider">
-          <div className="flex-1">Name</div>
-          <div className="w-24 text-right">Size</div>
-          <div className="w-32 text-right">Modified</div>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center text-text-muted">
-          <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-          <p className="text-red-400">{error}</p>
+      <div className="flex-1 flex flex-col overflow-hidden bg-terminal-bg">
+        {viewMode === 'list' && (
+          <div className="flex items-center px-4 py-2 bg-terminal-surface border-b border-terminal-border text-xs font-terminal text-terminal-muted uppercase tracking-wider">
+            <div className="flex-1">Name</div>
+            <div className="w-24 text-right">Size</div>
+            <div className="w-40 text-right">Modified</div>
+          </div>
+        )}
+        <div className="flex-1 flex flex-col items-center justify-center text-terminal-muted font-terminal">
+          <AlertCircle className="w-12 h-12 mb-2 text-terminal-red" />
+          <p className="text-terminal-red">{error}</p>
         </div>
       </div>
     );
@@ -211,21 +217,42 @@ export default function FileList({
 
   return (
     <div
-      className="flex-1 flex flex-col overflow-hidden"
+      className="flex-1 flex flex-col overflow-hidden bg-terminal-bg"
       onContextMenu={(e) => handleContextMenu(e, null)}
     >
-      <div className="flex items-center px-4 py-2 bg-bg-tertiary/50 border-b border-border text-xs font-medium text-text-muted uppercase tracking-wider">
-        <div className="flex-1">Name</div>
-        <div className="w-24 text-right">Size</div>
-        <div className="w-32 text-right">Modified</div>
-      </div>
+      {viewMode === 'list' && (
+        <div className="flex items-center px-4 py-2 bg-terminal-surface border-b border-terminal-border text-xs font-terminal text-terminal-muted uppercase tracking-wider">
+          <div className="flex-1">Name</div>
+          <div className="w-24 text-right">Size</div>
+          <div className="w-40 text-right">Modified</div>
+        </div>
+      )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto scrollbar-thin ${viewMode === 'grid' ? 'p-4' : ''}`}>
         {files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-text-muted">
+          <div className="flex flex-col items-center justify-center h-full text-terminal-muted font-terminal">
             <FolderOpen className="w-12 h-12 mb-2 opacity-50" />
             <p>This folder is empty</p>
-            <p className="text-xs mt-1">Right-click to create new folder</p>
+            <p className="text-xs mt-1 opacity-50">Right-click to create new folder</p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            {files.map((file) => (
+              <FileItem
+                key={file.id}
+                file={file}
+                selected={selectedFiles.includes(file.id)}
+                viewMode="grid"
+                onClick={(isCtrlClick) => onFileClick(file.id, isCtrlClick)}
+                onDoubleClick={() => onFileDoubleClick(file.id)}
+                onContextMenu={(e) => handleContextMenu(e, file)}
+                onDragStart={(e) => handleDragStart(e, file)}
+                onDragOver={(e) => handleDragOver(e, file)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, file)}
+                isDropTarget={dropTargetId === file.id}
+              />
+            ))}
           </div>
         ) : (
           files.map((file) => (
@@ -233,6 +260,7 @@ export default function FileList({
               key={file.id}
               file={file}
               selected={selectedFiles.includes(file.id)}
+              viewMode="list"
               onClick={(isCtrlClick) => onFileClick(file.id, isCtrlClick)}
               onDoubleClick={() => onFileDoubleClick(file.id)}
               onContextMenu={(e) => handleContextMenu(e, file)}

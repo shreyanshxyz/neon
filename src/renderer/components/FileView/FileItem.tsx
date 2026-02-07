@@ -18,6 +18,7 @@ import { useState } from 'react';
 interface FileItemProps {
   file: FileItemType;
   selected?: boolean;
+  viewMode?: 'grid' | 'list';
   onClick: (isCtrlClick: boolean) => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
@@ -28,33 +29,34 @@ interface FileItemProps {
   isDropTarget?: boolean;
 }
 
-const getIcon = (file: FileItemType) => {
-  if (file.type === 'folder') return <Folder className="w-5 h-5 text-blue-400" />;
+const getIcon = (file: FileItemType, size: 'sm' | 'lg' = 'sm') => {
+  const sizeClass = size === 'lg' ? 'w-12 h-12' : 'w-5 h-5';
 
-  const iconColor = 'text-text-secondary';
+  if (file.type === 'folder') return <Folder className={`${sizeClass} text-terminal-blue`} />;
+
   switch (file.icon) {
     case 'archive':
-      return <FileArchive className="w-5 h-5 text-amber-400" />;
+      return <FileArchive className={`${sizeClass} text-terminal-amber`} />;
     case 'text':
-      return <FileText className={`w-5 h-5 ${iconColor}`} />;
+      return <FileText className={`${sizeClass} text-terminal-text`} />;
     case 'image':
-      return <Image className="w-5 h-5 text-purple-400" />;
+      return <Image className={`${sizeClass} text-terminal-purple`} />;
     case 'audio':
-      return <Music className="w-5 h-5 text-pink-400" />;
+      return <Music className={`${sizeClass} text-terminal-cyan`} />;
     case 'video':
-      return <Video className="w-5 h-5 text-red-400" />;
+      return <Video className={`${sizeClass} text-terminal-red`} />;
     case 'code':
-      return <FileCode className="w-5 h-5 text-cyan-400" />;
+      return <FileCode className={`${sizeClass} text-terminal-green`} />;
     case 'web':
-      return <Globe className="w-5 h-5 text-green-400" />;
+      return <Globe className={`${sizeClass} text-terminal-blue`} />;
     case 'data':
-      return <FileJson className="w-5 h-5 text-orange-400" />;
+      return <FileJson className={`${sizeClass} text-terminal-amber`} />;
     case 'document':
-      return <FileType className="w-5 h-5 text-blue-300" />;
+      return <FileType className={`${sizeClass} text-terminal-blue`} />;
     case 'pdf':
-      return <FileText className="w-5 h-5 text-red-500" />;
+      return <FileText className={`${sizeClass} text-terminal-red`} />;
     default:
-      return <File className={`w-5 h-5 ${iconColor}`} />;
+      return <File className={`${sizeClass} text-terminal-muted`} />;
   }
 };
 
@@ -77,6 +79,7 @@ const formatDate = (date: Date): string => {
 export default function FileItem({
   file,
   selected,
+  viewMode = 'list',
   onClick,
   onDoubleClick,
   onContextMenu,
@@ -137,15 +140,42 @@ export default function FileItem({
     }
   };
 
+  if (viewMode === 'grid') {
+    return (
+      <div
+        draggable={true}
+        className={clsx(
+          'terminal-grid-item',
+          selected && 'selected',
+          isDragging && 'opacity-50',
+          (isDragOver || isDropTarget) && 'ring-2 ring-terminal-green'
+        )}
+        onClick={handleClick}
+        onDoubleClick={onDoubleClick}
+        onContextMenu={onContextMenu}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {getIcon(file, 'lg')}
+        <span className="mt-2 text-xs text-center text-terminal-text truncate w-full font-terminal">
+          {file.name}
+        </span>
+        <span className="text-[10px] text-terminal-muted mt-0.5">{formatSize(file.size)}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       draggable={true}
       className={clsx(
-        'flex items-center px-4 py-2 border-b border-border/50 cursor-pointer transition-colors',
-        selected && 'bg-accent-primary/25 text-text-primary',
-        !selected && 'hover:bg-bg-hover',
+        'terminal-list-item border-b border-terminal-border/30',
+        selected && 'selected',
         isDragging && 'opacity-50',
-        (isDragOver || isDropTarget) && 'bg-accent-primary/40 border-accent-primary'
+        (isDragOver || isDropTarget) && 'bg-terminal-elevated/70'
       )}
       onClick={handleClick}
       onDoubleClick={onDoubleClick}
@@ -157,11 +187,15 @@ export default function FileItem({
       onDrop={handleDrop}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {getIcon(file)}
-        <span className="text-sm truncate">{file.name}</span>
+        {getIcon(file, 'sm')}
+        <span className="text-sm truncate text-terminal-text">{file.name}</span>
       </div>
-      <div className="w-24 text-right text-sm text-text-secondary">{formatSize(file.size)}</div>
-      <div className="w-32 text-right text-sm text-text-secondary">{formatDate(file.modified)}</div>
+      <div className="w-24 text-right text-sm text-terminal-muted font-terminal">
+        {formatSize(file.size)}
+      </div>
+      <div className="w-40 text-right text-sm text-terminal-muted font-terminal">
+        {formatDate(file.modified)}
+      </div>
     </div>
   );
 }

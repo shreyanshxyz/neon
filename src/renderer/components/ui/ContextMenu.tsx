@@ -127,12 +127,12 @@ export default function ContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-[180px] bg-bg-secondary border border-border rounded-lg shadow-xl py-1"
+      className="terminal-context-menu fixed z-50"
       style={{ left: adjustedX, top: adjustedY }}
     >
       {menuItems.map((item, index) => {
         if (item.type === 'separator') {
-          return <div key={`sep-${index}`} className="my-1 border-t border-border" />;
+          return <div key={`sep-${index}`} className="terminal-context-separator" />;
         }
 
         return (
@@ -142,13 +142,13 @@ export default function ContextMenu({
               item.onClick();
               onClose();
             }}
-            className={`w-full px-3 py-2 flex items-center gap-2 text-sm hover:bg-bg-hover transition-colors ${
-              item.danger ? 'text-red-400 hover:text-red-300' : 'text-text-primary'
-            }`}
+            className={`terminal-context-item ${item.danger ? 'text-terminal-red hover:text-terminal-red' : ''}`}
           >
             {item.icon}
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.shortcut && <span className="text-xs text-text-muted">{item.shortcut}</span>}
+            <span className="flex-1 text-left font-terminal">{item.label}</span>
+            {item.shortcut && (
+              <span className="text-xs text-terminal-muted font-terminal">{item.shortcut}</span>
+            )}
           </button>
         );
       })}

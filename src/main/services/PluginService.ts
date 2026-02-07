@@ -214,6 +214,11 @@ export class PluginService {
   }
 
   private resolvePluginDir(): string {
+    const resourcesDir = path.join(process.resourcesPath || '', 'plugins');
+    if (fs.existsSync(resourcesDir)) {
+      return resourcesDir;
+    }
+
     const candidates = [
       path.join(app.getAppPath(), 'src', 'plugins'),
       path.join(process.cwd(), 'src', 'plugins'),
@@ -222,7 +227,12 @@ export class PluginService {
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) return candidate;
     }
-    return candidates[0];
+
+    const userPluginsDir = path.join(app.getPath('userData'), 'plugins');
+    if (!fs.existsSync(userPluginsDir)) {
+      fs.mkdirSync(userPluginsDir, { recursive: true });
+    }
+    return userPluginsDir;
   }
 
   private async runWithTimeout<T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> {

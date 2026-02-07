@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+if [ -f "$HOME/.cargo/env" ]; then
+  . "$HOME/.cargo/env"
+fi
+
 root_dir="$(cd "$(dirname "$0")/.." && pwd)"
 
 for plugin_dir in "$root_dir"/src/plugins/*/; do

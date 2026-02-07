@@ -56,19 +56,17 @@ fn syntax_for_extension<'a>(set: &'a SyntaxSet, extension: &str) -> &'a syntect:
   set.find_syntax_plain_text()
 }
 
-fn write_result(mut data: Vec<u8>, mime_type: &str) {
+fn write_result(data: Vec<u8>, mime_type: &str) {
   let mut mime = mime_type.as_bytes().to_vec();
-  mime.push(0);
-  let data_ptr = data.as_mut_ptr();
+  mime.push(0); 
+  let data_ptr = data.as_ptr() as i32;
   let data_len = data.len() as i32;
   let mime_ptr = mime.as_ptr() as i32;
 
   unsafe {
-    host_return_result(data_ptr as i32, data_len, mime_ptr);
+    host_return_result(data_ptr, data_len, mime_ptr);
   }
-
-  std::mem::forget(data);
-  std::mem::forget(mime);
+  
 }
 
 unsafe fn slice_from_raw<'a>(ptr: i32, len: i32) -> &'a [u8] {
