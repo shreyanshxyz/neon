@@ -62,7 +62,7 @@ interface SearchResult {
 interface ParsedQuery {
   keywords: string[];
   fileTypes?: string[];
-  dateRange?: { start: Date; end: Date };
+  dateRange?: { start: string; end: string };
   sizeRange?: { min?: number; max?: number };
   namePattern?: string;
   contentQuery?: string;
