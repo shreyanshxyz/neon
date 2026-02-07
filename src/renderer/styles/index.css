@@ -64,3 +64,11 @@
     @apply bg-text-muted;
   }
 }
+
+.neon-code {
+  @apply bg-bg-primary rounded border border-border p-3 overflow-auto text-xs;
+}
+
+.neon-code pre {
+  @apply m-0 font-mono text-text-secondary whitespace-pre-wrap break-all;
+}
