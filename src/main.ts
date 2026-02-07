@@ -4,11 +4,13 @@ import * as path from 'path';
 import fs from 'fs';
 import { FileIndexer } from './main/services/FileIndexer.js';
 import { QueryParser } from './main/services/QueryParser.js';
+import { SmartFolderService } from './main/services/SmartFolderService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const fileIndexer = new FileIndexer();
 const queryParser = new QueryParser();
+const smartFolderService = new SmartFolderService();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -208,6 +210,68 @@ ipcMain.handle('search:clear', () => {
 ipcMain.handle('search:getSuggestions', (_, partial: string) => {
   const suggestions = queryParser.getSuggestions(partial);
   return { suggestions };
+});
+
+ipcMain.handle('smartFolders:getAll', async () => {
+  try {
+    const folders = await smartFolderService.getAll();
+    return { success: true, folders };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to get smart folders' };
+  }
+});
+
+ipcMain.handle('smartFolders:create', async (_, data) => {
+  try {
+    const folder = await smartFolderService.create(data);
+    return { success: true, folder };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to create smart folder' };
+  }
+});
+
+ipcMain.handle('smartFolders:update', async (_, id, data) => {
+  try {
+    const folder = await smartFolderService.update(id, data);
+    return { success: true, folder };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to update smart folder' };
+  }
+});
+
+ipcMain.handle('smartFolders:delete', async (_, id) => {
+  try {
+    await smartFolderService.delete(id);
+    return { success: true };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to delete smart folder' };
+  }
+});
+
+ipcMain.handle('smartFolders:execute', async (_, id) => {
+  try {
+    const folder = await smartFolderService.execute(id);
+    const parsedQuery = queryParser.parse(folder.query);
+    const results = fileIndexer.search(parsedQuery);
+    return { success: true, folder, results };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to execute smart folder' };
+  }
+});
+
+ipcMain.handle('smartFolders:getCount', async () => {
+  try {
+    const count = await smartFolderService.getCount();
+    return { success: true, count };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return { success: false, error: err.message || 'Failed to get count' };
+  }
 });
 
 function createWindow(): void {
