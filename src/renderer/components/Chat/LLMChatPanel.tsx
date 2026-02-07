@@ -44,6 +44,16 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
   const [mentionQuery, setMentionQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const streamCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (streamCleanupRef.current) {
+        streamCleanupRef.current();
+        streamCleanupRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,11 +190,13 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
         conversationHistory
       );
 
-      (assistantMessage as ChatEntry & { cleanup?: () => void }).cleanup = cleanup;
+      streamCleanupRef.current = cleanup;
 
       setMessages((prev) =>
         prev.map((msg) => (msg.id === assistantMessage.id ? { ...msg, isStreaming: false } : msg))
       );
+
+      streamCleanupRef.current = null;
     } catch (err) {
       setMessages((prev) =>
         prev.map((msg) =>
@@ -197,6 +209,7 @@ export default function LLMChatPanel({ selectedFiles, currentPath }: LLMChatPane
             : msg
         )
       );
+      streamCleanupRef.current = null;
     }
   };
 
