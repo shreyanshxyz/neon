@@ -108,7 +108,7 @@ function App() {
         setIsSearchOpen(true);
       }
 
-      if (isCtrl && e.shiftKey && e.key.toLowerCase() === 'c') {
+      if (isCtrl && e.shiftKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         setRightPanelTab((prev) => (prev === 'chat' ? 'preview' : 'chat'));
       }
