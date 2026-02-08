@@ -13,10 +13,7 @@
   }
 
   body {
-    @apply bg-terminal-bg text-terminal-text font-sans antialiased;
-    font-feature-settings:
-      'liga' 1,
-      'calt' 1;
+    @apply bg-bg-primary text-text-primary font-sans antialiased;
   }
 
   #root {
@@ -24,166 +21,129 @@
   }
 
   ::selection {
-    @apply bg-terminal-green/30 text-terminal-bright;
+    @apply bg-accent/30 text-text-primary;
   }
 }
 
 @layer components {
   .app-container {
-    @apply flex flex-col h-screen w-full bg-terminal-bg overflow-hidden relative;
+    @apply flex flex-col h-screen w-full bg-bg-primary overflow-hidden;
   }
 
-  .app-container::before {
-    content: '';
-    @apply fixed inset-0 pointer-events-none z-10;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.03) 0px,
-      rgba(0, 0, 0, 0.03) 1px,
-      transparent 1px,
-      transparent 2px
-    );
-    background-size: 100% 4px;
+  .main-layout {
+    @apply flex flex-1 overflow-hidden;
   }
 
   .sidebar {
-    @apply w-[280px] bg-terminal-surface border-r border-terminal-border flex flex-col shrink-0;
+    @apply w-64 bg-bg-secondary border-r border-border flex flex-col shrink-0;
   }
 
   .main-content {
-    @apply flex-1 flex flex-col min-w-0 overflow-hidden bg-terminal-bg;
+    @apply flex-1 flex flex-col min-w-0 overflow-hidden bg-bg-primary;
+  }
+
+  .right-panel {
+    @apply w-80 bg-bg-secondary border-l border-border flex flex-col shrink-0;
   }
 
   .toolbar {
-    @apply h-12 bg-terminal-surface border-b border-terminal-border flex items-center px-4 gap-2;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply h-10 bg-bg-secondary border-b border-border flex items-center px-3 gap-2;
   }
 
   .file-list {
     @apply flex-1 flex flex-col overflow-hidden;
   }
 
-  .terminal-prompt {
-    @apply font-terminal text-terminal-green font-medium;
+  .file-list-header {
+    @apply flex items-center px-3 py-2 bg-bg-secondary border-b border-border text-xs font-medium text-text-muted uppercase tracking-wide;
   }
 
-  .terminal-header {
-    @apply bg-terminal-surface border-b border-terminal-border px-4 py-2 flex items-center gap-2;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  .file-item {
+    @apply flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-border/30 text-sm;
+    @apply hover:bg-bg-hover;
   }
 
-  .terminal-footer {
-    @apply bg-terminal-surface border-t border-terminal-border px-4 py-1.5 flex items-center justify-between text-terminal-muted text-xs font-terminal;
+  .file-item.selected {
+    @apply bg-bg-tertiary;
   }
 
-  .terminal-btn {
-    @apply px-3 py-1.5 bg-terminal-surface border border-terminal-border rounded text-terminal-text text-sm font-medium;
-    @apply hover:bg-terminal-elevated hover:border-terminal-green/50 hover:text-terminal-green;
-    @apply active:bg-terminal-elevated active:scale-95;
-    @apply transition-all duration-0;
+  .file-grid-item {
+    @apply flex flex-col items-center p-3 rounded cursor-pointer gap-2;
+    @apply hover:bg-bg-hover;
   }
 
-  .terminal-btn-primary {
-    @apply terminal-btn bg-terminal-green/10 border-terminal-green/30 text-terminal-green;
-    @apply hover:bg-terminal-green/20 hover:border-terminal-green/50;
+  .file-grid-item.selected {
+    @apply bg-bg-tertiary;
   }
 
-  .terminal-input {
-    @apply bg-terminal-bg border border-terminal-border rounded px-3 py-2 text-terminal-text font-terminal text-sm;
-    @apply focus:outline-none focus:border-terminal-green/50 focus:ring-1 focus:ring-terminal-green/30;
-    @apply placeholder:text-terminal-muted;
+  .btn {
+    @apply px-3 py-1.5 rounded text-sm font-medium transition-colors;
+    @apply bg-bg-tertiary text-text-primary;
+    @apply hover:bg-bg-hover;
+    @apply active:bg-bg-active;
   }
 
-  .terminal-card {
-    @apply bg-terminal-surface border border-terminal-border rounded;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  .btn-primary {
+    @apply btn;
+    @apply bg-accent text-white;
+    @apply hover:bg-accent-hover;
+    @apply active:bg-accent-active;
   }
 
-  .terminal-tab {
-    @apply px-4 py-2 text-terminal-muted text-sm font-medium border-b-2 border-transparent;
-    @apply hover:text-terminal-text hover:bg-terminal-elevated/50;
-    @apply transition-all duration-0;
+  .btn-icon {
+    @apply p-2 rounded text-text-secondary;
+    @apply hover:text-text-primary hover:bg-bg-hover;
   }
 
-  .terminal-tab-active {
-    @apply text-terminal-green border-terminal-green;
-    box-shadow: inset 0 -2px 0 0 theme('colors.terminal.green');
+  .input {
+    @apply px-3 py-1.5 bg-bg-primary border border-border rounded text-sm;
+    @apply focus:outline-none focus:border-accent;
+    @apply placeholder:text-text-muted;
   }
 
-  .terminal-section-header {
-    @apply text-terminal-muted text-xs font-terminal uppercase tracking-wider px-4 py-2 border-b border-terminal-border;
+  .context-menu {
+    @apply fixed z-50 min-w-[180px] bg-bg-secondary border border-border rounded py-1;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   }
 
-  .terminal-grid-item {
-    @apply flex flex-col items-center p-3 rounded cursor-pointer;
-    @apply hover:bg-terminal-elevated;
-    @apply transition-all duration-0;
+  .context-item {
+    @apply w-full px-3 py-2 flex items-center gap-2 text-sm text-text-primary;
+    @apply hover:bg-bg-hover;
   }
 
-  .terminal-grid-item.selected {
-    @apply bg-terminal-elevated ring-1 ring-terminal-green/50;
-    box-shadow: 0 0 10px rgba(0, 255, 136, 0.15);
+  .context-separator {
+    @apply h-px bg-border my-1 mx-2;
   }
 
-  .terminal-list-item {
-    @apply flex items-center gap-3 px-4 py-2 cursor-pointer font-terminal text-sm;
-    @apply hover:bg-terminal-elevated;
-    @apply transition-all duration-0;
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50;
   }
 
-  .terminal-list-item.selected {
-    @apply bg-terminal-elevated;
-    box-shadow: inset 3px 0 0 theme('colors.terminal.green');
+  .modal {
+    @apply bg-bg-secondary border border-border rounded-lg p-6 w-96;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   }
 
-  .terminal-glow {
-    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+  .tab {
+    @apply px-3 py-2 text-sm font-medium text-text-muted;
+    @apply hover:text-text-primary;
+    @apply border-b-2 border-transparent;
   }
 
-  .terminal-glow-strong {
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
-  }
-
-  .terminal-cursor {
-    @apply inline-block w-2 h-4 bg-terminal-green ml-0.5;
-    animation: terminal-blink 1s step-end infinite;
-  }
-
-  .terminal-context-menu {
-    @apply bg-terminal-surface border border-terminal-border rounded shadow-xl py-1 min-w-[160px];
-  }
-
-  .terminal-context-item {
-    @apply px-3 py-1.5 text-terminal-text text-sm flex items-center gap-2 cursor-pointer;
-    @apply hover:bg-terminal-elevated hover:text-terminal-green;
-    @apply transition-all duration-0;
-  }
-
-  .terminal-context-separator {
-    @apply h-px bg-terminal-border my-1 mx-2;
-  }
-
-  .terminal-modal-overlay {
-    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20;
-  }
-
-  .terminal-modal {
-    @apply bg-terminal-surface border border-terminal-border rounded shadow-2xl w-[700px] max-w-[90vw];
-    box-shadow:
-      0 25px 50px -12px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.05);
+  .tab.active {
+    @apply text-accent border-accent;
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.terminal.border') transparent;
+    scrollbar-color: #333 transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -191,46 +151,18 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-terminal-border rounded-full;
+    @apply bg-bg-tertiary rounded-full;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-terminal-muted;
-  }
-
-  .font-mono-tabular {
-    font-feature-settings:
-      'tnum' 1,
-      'liga' 1;
+    @apply bg-border;
   }
 }
 
 .neon-code {
-  @apply bg-terminal-bg rounded border border-terminal-border p-3 overflow-auto text-xs font-terminal;
+  @apply bg-bg-primary rounded border border-border p-3 overflow-auto text-xs font-mono;
 }
 
 .neon-code pre {
-  @apply m-0 text-terminal-text whitespace-pre-wrap break-all;
-}
-
-.neon-code .comment {
-  @apply text-terminal-muted;
-}
-.neon-code .keyword {
-  @apply text-terminal-purple;
-}
-.neon-code .string {
-  @apply text-terminal-amber;
-}
-.neon-code .function {
-  @apply text-terminal-blue;
-}
-.neon-code .number {
-  @apply text-terminal-cyan;
-}
-.neon-code .operator {
-  @apply text-terminal-red;
-}
-.neon-code .variable {
-  @apply text-terminal-text;
+  @apply m-0 text-text-secondary whitespace-pre-wrap break-all;
 }

@@ -142,13 +142,11 @@ export default function ContextMenu({
               item.onClick();
               onClose();
             }}
-            className={`terminal-context-item ${item.danger ? 'text-terminal-red hover:text-terminal-red' : ''}`}
+            className={`context-item ${item.danger ? 'text-error hover:text-error' : ''}`}
           >
             {item.icon}
-            <span className="flex-1 text-left font-terminal">{item.label}</span>
-            {item.shortcut && (
-              <span className="text-xs text-terminal-muted font-terminal">{item.shortcut}</span>
-            )}
+            <span className="flex-1 text-left">{item.label}</span>
+            {item.shortcut && <span className="text-xs text-text-muted">{item.shortcut}</span>}
           </button>
         );
       })}
