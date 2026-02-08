@@ -32,6 +32,8 @@ function App() {
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat' | 'plugins'>('preview');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [rightPanelVisible, setRightPanelVisible] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     isOpen: boolean;
@@ -370,40 +372,25 @@ function App() {
   const displayedLoading = isSmartFolderView ? smartFolderLoading : loading;
   const selectedFileItems = displayedFiles.filter((file) => selectedFiles.includes(file.id));
 
-  const getStatusText = () => {
-    if (displayedLoading) return 'λ loading...';
-    if (error) return 'λ error';
-    const count = displayedFiles.length;
-    const selected = selectedFiles.length;
-    if (selected > 0) {
-      return `λ ${selected} selected / ${count} items`;
-    }
-    return `λ ${count} items`;
-  };
-
   return (
     <div className="app-container">
-      <div className="terminal-header border-b border-terminal-border">
-        <span className="font-terminal text-terminal-green text-sm">λ</span>
-        <span className="font-terminal text-terminal-text text-sm ml-2">NEON FILE MANAGER</span>
-        <span className="text-terminal-muted text-xs ml-4">v1.0.0</span>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          currentPath={currentPath}
-          onPathChange={handleNavigate}
-          smartFolders={folders}
-          onSmartFolderSelect={handleSmartFolderSelect}
-          onCreateSmartFolder={() =>
-            setSmartFolderDialog({ isOpen: true, mode: 'create', folder: null })
-          }
-          onEditSmartFolder={(folder) =>
-            setSmartFolderDialog({ isOpen: true, mode: 'edit', folder })
-          }
-          onDeleteSmartFolder={handleDeleteSmartFolder}
-          onRefreshSmartFolder={handleRefreshSmartFolder}
-        />
+      <div className="main-layout">
+        {sidebarVisible && (
+          <Sidebar
+            currentPath={currentPath}
+            onPathChange={handleNavigate}
+            smartFolders={folders}
+            onSmartFolderSelect={handleSmartFolderSelect}
+            onCreateSmartFolder={() =>
+              setSmartFolderDialog({ isOpen: true, mode: 'create', folder: null })
+            }
+            onEditSmartFolder={(folder) =>
+              setSmartFolderDialog({ isOpen: true, mode: 'edit', folder })
+            }
+            onDeleteSmartFolder={handleDeleteSmartFolder}
+            onRefreshSmartFolder={handleRefreshSmartFolder}
+          />
+        )}
         <main className="main-content">
           <Toolbar
             currentPath={currentPath}
@@ -413,6 +400,11 @@ function App() {
             smartFolderName={currentSmartFolder?.name}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            sidebarVisible={sidebarVisible}
+            onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+            rightPanelVisible={rightPanelVisible}
+            onToggleRightPanel={() => setRightPanelVisible(!rightPanelVisible)}
+            onOpenSearch={() => setIsSearchOpen(true)}
           />
           <FileList
             files={displayedFiles}
@@ -434,19 +426,16 @@ function App() {
             onFileDrop={handleFileDrop}
           />
         </main>
-        <RightPanel
-          tab={rightPanelTab}
-          onTabChange={setRightPanelTab}
-          file={previewFile}
-          selectedFiles={selectedFileItems}
-          currentPath={currentPath}
-          readFileContent={readFileContent}
-        />
-      </div>
-
-      <div className="terminal-footer">
-        <span className="font-terminal">{getStatusText()}</span>
-        <span className="text-terminal-muted">Press Ctrl+F to search • Ctrl+Shift+L for chat</span>
+        {rightPanelVisible && (
+          <RightPanel
+            tab={rightPanelTab}
+            onTabChange={setRightPanelTab}
+            file={previewFile}
+            selectedFiles={selectedFileItems}
+            currentPath={currentPath}
+            readFileContent={readFileContent}
+          />
+        )}
       </div>
       <SearchModal
         isOpen={isSearchOpen}
@@ -469,24 +458,24 @@ function App() {
       />
 
       {renameDialog.isOpen && (
-        <div className="terminal-modal-overlay">
-          <div className="terminal-modal p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4 text-terminal-text font-terminal">Rename</h3>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="text-lg font-semibold mb-4 text-text-primary">Rename</h3>
             <input
               type="text"
               value={renameDialog.newName}
               onChange={(e) => setRenameDialog((prev) => ({ ...prev, newName: e.target.value }))}
-              className="terminal-input w-full"
+              className="input w-full"
               autoFocus
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setRenameDialog({ isOpen: false, file: null, newName: '' })}
-                className="terminal-btn"
+                className="btn"
               >
                 Cancel
               </button>
-              <button onClick={confirmRename} className="terminal-btn-primary">
+              <button onClick={confirmRename} className="btn-primary">
                 Rename
               </button>
             </div>
@@ -495,26 +484,24 @@ function App() {
       )}
 
       {newFolderDialog.isOpen && (
-        <div className="terminal-modal-overlay">
-          <div className="terminal-modal p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4 text-terminal-text font-terminal">
-              New Folder
-            </h3>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="text-lg font-semibold mb-4 text-text-primary">New Folder</h3>
             <input
               type="text"
               value={newFolderDialog.name}
               onChange={(e) => setNewFolderDialog((prev) => ({ ...prev, name: e.target.value }))}
-              className="terminal-input w-full"
+              className="input w-full"
               autoFocus
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setNewFolderDialog({ isOpen: false, name: '' })}
-                className="terminal-btn"
+                className="btn"
               >
                 Cancel
               </button>
-              <button onClick={confirmCreateFolder} className="terminal-btn-primary">
+              <button onClick={confirmCreateFolder} className="btn-primary">
                 Create
               </button>
             </div>
