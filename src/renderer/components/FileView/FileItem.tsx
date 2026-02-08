@@ -30,33 +30,35 @@ interface FileItemProps {
 }
 
 const getIcon = (file: FileItemType, size: 'sm' | 'lg' = 'sm') => {
-  const sizeClass = size === 'lg' ? 'w-12 h-12' : 'w-5 h-5';
+  const sizeClass = size === 'lg' ? 'w-10 h-10' : 'w-5 h-5';
 
-  if (file.type === 'folder') return <Folder className={`${sizeClass} text-terminal-blue`} />;
+  if (file.type === 'folder') {
+    return <Folder className={`${sizeClass} text-accent`} />;
+  }
 
   switch (file.icon) {
     case 'archive':
-      return <FileArchive className={`${sizeClass} text-terminal-amber`} />;
+      return <FileArchive className={`${sizeClass} text-text-muted`} />;
     case 'text':
-      return <FileText className={`${sizeClass} text-terminal-text`} />;
+      return <FileText className={`${sizeClass} text-text-muted`} />;
     case 'image':
-      return <Image className={`${sizeClass} text-terminal-purple`} />;
+      return <Image className={`${sizeClass} text-text-muted`} />;
     case 'audio':
-      return <Music className={`${sizeClass} text-terminal-cyan`} />;
+      return <Music className={`${sizeClass} text-text-muted`} />;
     case 'video':
-      return <Video className={`${sizeClass} text-terminal-red`} />;
+      return <Video className={`${sizeClass} text-text-muted`} />;
     case 'code':
-      return <FileCode className={`${sizeClass} text-terminal-green`} />;
+      return <FileCode className={`${sizeClass} text-text-muted`} />;
     case 'web':
-      return <Globe className={`${sizeClass} text-terminal-blue`} />;
+      return <Globe className={`${sizeClass} text-text-muted`} />;
     case 'data':
-      return <FileJson className={`${sizeClass} text-terminal-amber`} />;
+      return <FileJson className={`${sizeClass} text-text-muted`} />;
     case 'document':
-      return <FileType className={`${sizeClass} text-terminal-blue`} />;
+      return <FileType className={`${sizeClass} text-text-muted`} />;
     case 'pdf':
-      return <FileText className={`${sizeClass} text-terminal-red`} />;
+      return <FileText className={`${sizeClass} text-text-muted`} />;
     default:
-      return <File className={`${sizeClass} text-terminal-muted`} />;
+      return <File className={`${sizeClass} text-text-muted`} />;
   }
 };
 
@@ -145,10 +147,10 @@ export default function FileItem({
       <div
         draggable={true}
         className={clsx(
-          'terminal-grid-item',
+          'file-grid-item',
           selected && 'selected',
           isDragging && 'opacity-50',
-          (isDragOver || isDropTarget) && 'ring-2 ring-terminal-green'
+          (isDragOver || isDropTarget) && 'ring-1 ring-accent'
         )}
         onClick={handleClick}
         onDoubleClick={onDoubleClick}
@@ -160,10 +162,10 @@ export default function FileItem({
         onDrop={handleDrop}
       >
         {getIcon(file, 'lg')}
-        <span className="mt-2 text-xs text-center text-terminal-text truncate w-full font-terminal">
+        <span className="text-xs text-center text-text-primary truncate w-full mt-1">
           {file.name}
         </span>
-        <span className="text-[10px] text-terminal-muted mt-0.5">{formatSize(file.size)}</span>
+        <span className="text-[10px] text-text-muted">{formatSize(file.size)}</span>
       </div>
     );
   }
@@ -172,10 +174,10 @@ export default function FileItem({
     <div
       draggable={true}
       className={clsx(
-        'terminal-list-item border-b border-terminal-border/30',
+        'file-item',
         selected && 'selected',
         isDragging && 'opacity-50',
-        (isDragOver || isDropTarget) && 'bg-terminal-elevated/70'
+        (isDragOver || isDropTarget) && 'bg-bg-hover'
       )}
       onClick={handleClick}
       onDoubleClick={onDoubleClick}
@@ -188,14 +190,12 @@ export default function FileItem({
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {getIcon(file, 'sm')}
-        <span className="text-sm truncate text-terminal-text">{file.name}</span>
+        <span className="text-sm truncate text-text-primary">{file.name}</span>
       </div>
-      <div className="w-24 text-right text-sm text-terminal-muted font-terminal">
+      <div className="w-20 text-right text-sm text-text-muted font-mono">
         {formatSize(file.size)}
       </div>
-      <div className="w-40 text-right text-sm text-terminal-muted font-terminal">
-        {formatDate(file.modified)}
-      </div>
+      <div className="w-32 text-right text-sm text-text-muted">{formatDate(file.modified)}</div>
     </div>
   );
 }
