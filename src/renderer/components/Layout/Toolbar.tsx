@@ -1,4 +1,14 @@
-import { ArrowLeft, ArrowRight, ArrowUp, RefreshCw, Search, Grid3X3, List } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  RefreshCw,
+  Search,
+  Grid3X3,
+  List,
+  PanelLeft,
+  PanelRight,
+} from 'lucide-react';
 import { ChangeEvent, useState } from 'react';
 
 interface ToolbarProps {
@@ -9,6 +19,11 @@ interface ToolbarProps {
   smartFolderName?: string;
   viewMode?: 'grid' | 'list';
   onViewModeChange?: (mode: 'grid' | 'list') => void;
+  sidebarVisible: boolean;
+  onToggleSidebar: () => void;
+  rightPanelVisible: boolean;
+  onToggleRightPanel: () => void;
+  onOpenSearch?: () => void;
 }
 
 export default function Toolbar({
@@ -19,6 +34,11 @@ export default function Toolbar({
   smartFolderName,
   viewMode = 'list',
   onViewModeChange,
+  sidebarVisible,
+  onToggleSidebar,
+  rightPanelVisible,
+  onToggleRightPanel,
+  onOpenSearch,
 }: ToolbarProps) {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -42,28 +62,25 @@ export default function Toolbar({
     }
   };
 
-  const displayPath =
-    isSmartFolderView && smartFolderName ? `smartfolder://${smartFolderName}` : currentPath;
+  const displayPath = isSmartFolderView && smartFolderName ? smartFolderName : currentPath;
 
   return (
-    <header className="h-12 bg-terminal-surface border-b border-terminal-border flex items-center px-4 gap-3">
-      <span className="font-terminal text-terminal-green text-lg select-none">λ</span>
-
-      <div className="flex items-center gap-1">
+    <header className="toolbar">
+      <div className="flex items-center gap-0.5">
         <button
           onClick={handleBack}
           disabled={currentPath === '/'}
-          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <button disabled className="p-2 text-terminal-muted opacity-30 cursor-not-allowed">
+        <button disabled className="btn-icon opacity-30 cursor-not-allowed">
           <ArrowRight className="w-4 h-4" />
         </button>
         <button
           onClick={handleBack}
           disabled={currentPath === '/'}
-          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ArrowUp className="w-4 h-4" />
         </button>
@@ -71,7 +88,7 @@ export default function Toolbar({
 
       <div className="flex-1 mx-2">
         {isSmartFolderView ? (
-          <div className="w-full px-3 py-1.5 bg-terminal-green/10 border border-terminal-green/30 rounded text-terminal-green text-sm font-terminal">
+          <div className="w-full px-3 py-1.5 bg-accent-muted border border-accent/30 rounded text-accent text-sm font-medium">
             {displayPath}
           </div>
         ) : (
@@ -82,16 +99,15 @@ export default function Toolbar({
                 onChange={handlePathChange}
                 onKeyDown={handleKeyDown}
                 onBlur={() => setIsEditing(false)}
-                className="w-full px-3 py-1.5 bg-terminal-bg border border-terminal-green/50 rounded text-terminal-text text-sm font-terminal focus:outline-none focus:ring-1 focus:ring-terminal-green/50"
+                className="input w-full font-mono text-sm"
                 autoFocus
               />
             ) : (
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full px-3 py-1.5 bg-terminal-bg border border-terminal-border rounded text-terminal-text text-sm font-terminal text-left hover:border-terminal-green/30 transition-all duration-0"
+                className="w-full px-3 py-1.5 bg-bg-primary border border-border rounded text-sm text-left hover:border-accent/50 transition-colors"
               >
-                <span className="text-terminal-muted">~</span>
-                <span className="ml-1">
+                <span className="text-text-muted font-mono">
                   {displayPath.replace(process.env.HOME || '', '') || '/'}
                 </span>
               </button>
@@ -100,31 +116,46 @@ export default function Toolbar({
         )}
       </div>
 
+      {/* View mode toggle */}
       {onViewModeChange && (
-        <div className="flex items-center gap-1 bg-terminal-bg rounded border border-terminal-border p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-primary rounded border border-border p-0.5">
           <button
             onClick={() => onViewModeChange('grid')}
-            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-terminal-elevated text-terminal-green' : 'text-terminal-muted hover:text-terminal-text'}`}
+            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-bg-tertiary text-accent' : 'text-text-muted hover:text-text-primary'}`}
           >
             <Grid3X3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onViewModeChange('list')}
-            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-terminal-elevated text-terminal-green' : 'text-terminal-muted hover:text-terminal-text'}`}
+            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-bg-tertiary text-accent' : 'text-text-muted hover:text-text-primary'}`}
           >
             <List className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         <button
-          onClick={() => onPathChange(currentPath)}
-          className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded"
+          onClick={onToggleSidebar}
+          className={`btn-icon ${sidebarVisible ? 'text-accent' : 'text-text-muted'}`}
+          title="Toggle sidebar"
         >
+          <PanelLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={onToggleRightPanel}
+          className={`btn-icon ${rightPanelVisible ? 'text-accent' : 'text-text-muted'}`}
+          title="Toggle preview panel"
+        >
+          <PanelRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-0.5">
+        <button onClick={() => onPathChange(currentPath)} className="btn-icon" title="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
-        <button className="p-2 text-terminal-muted hover:text-terminal-text hover:bg-terminal-elevated rounded">
+        <button onClick={onOpenSearch} className="btn-icon" title="Search">
           <Search className="w-4 h-4" />
         </button>
       </div>
