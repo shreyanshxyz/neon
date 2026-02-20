@@ -26,8 +26,8 @@ const pathUtils = {
 };
 
 function App() {
-  const [homePath, setHomePath] = useState(process.env.HOME || '/home/user');
-  const [currentPath, setCurrentPath] = useState(process.env.HOME || '/home/user');
+  const [homePath, setHomePath] = useState('');
+  const [currentPath, setCurrentPath] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat' | 'plugins'>('preview');
@@ -94,7 +94,7 @@ function App() {
     if (window.filesystem?.homePath) {
       window.filesystem.homePath().then((path: string) => {
         setHomePath(path);
-        if (currentPath === '/home/user' || currentPath === '/home/shreyanshxyz') {
+        if (!currentPath || currentPath === '/home/user' || currentPath === '/home/shreyanshxyz') {
           setCurrentPath(path);
           navigate(path);
         }
