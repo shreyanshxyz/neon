@@ -116,11 +116,13 @@ export function useFileSystem(initialPath: string) {
 
   const loadDirectory = useCallback(
     async (dirPath: string) => {
-      if (dirPath.startsWith('smartfolder://')) {
-        setFiles([]);
-        setLoading(false);
-        setError(null);
-        setCurrentPath(dirPath);
+      if (!dirPath || dirPath.startsWith('smartfolder://')) {
+        if (dirPath.startsWith('smartfolder://')) {
+          setFiles([]);
+          setLoading(false);
+          setError(null);
+          setCurrentPath(dirPath);
+        }
         return;
       }
 
@@ -298,7 +300,9 @@ export function useFileSystem(initialPath: string) {
   }, [currentPath, loadDirectory]);
 
   useEffect(() => {
-    loadDirectory(initialPath);
+    if (initialPath) {
+      loadDirectory(initialPath);
+    }
   }, [initialPath, loadDirectory]);
 
   return {
