@@ -42,3 +42,5 @@ release/
 
 src/plugins/**/target/
 src/plugins/**/plugin.wasm
+
+dist-electron
