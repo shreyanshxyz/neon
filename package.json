@@ -9,7 +9,7 @@
     "build": "npm run build:plugins && npm run build:renderer && npm run build:main",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
-    "build:plugins": "./scripts/build-plugins.sh",
+    "build:plugins": "bash scripts/build-plugins.sh",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc -p tsconfig.main.json -w & NODE_ENV=development electron .",
     "dev:renderer": "vite",
