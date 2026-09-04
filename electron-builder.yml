@@ -1,0 +1,22 @@
+appId: com.neon.filemanager
+productName: Neon File Manager
+directories:
+  output: dist-electron
+files:
+  - dist/**
+  - package.json
+extraResources:
+  - from: src/plugins
+    to: plugins
+    filter:
+      - '**/*.wasm'
+      - '**/manifest.json'
+win:
+  target: nsis
+mac:
+  target: dmg
+linux:
+  target: AppImage
+asar: true
+asarUnpack:
+  - '**/*.wasm'

@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html,
+  body {
+    @apply h-full w-full m-0 p-0;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary font-sans antialiased;
+  }
+
+  #root {
+    @apply w-full h-full;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(51, 51, 51, 0.4);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(85, 85, 85, 0.8);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(59, 130, 246, 0.6);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(51, 51, 51, 0.4) transparent;
+  }
+
+  *:hover {
+    scrollbar-color: rgba(68, 68, 68, 0.7) transparent;
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply flex flex-col h-screen w-full bg-bg-primary overflow-hidden;
+  }
+
+  .main-layout {
+    @apply flex flex-1 overflow-hidden;
+  }
+
+  .sidebar {
+    @apply w-64 bg-bg-secondary border-r border-border flex flex-col shrink-0;
+  }
+
+  .main-content {
+    @apply flex-1 flex flex-col min-w-0 overflow-hidden bg-bg-primary;
+  }
+
+  .right-panel {
+    @apply w-80 bg-bg-secondary border-l border-border flex flex-col shrink-0;
+  }
+
+  .toolbar {
+    @apply h-10 bg-bg-secondary border-b border-border flex items-center px-3 gap-2;
+  }
+
+  .file-list {
+    @apply flex-1 flex flex-col overflow-hidden;
+  }
+
+  .file-list-header {
+    @apply flex items-center px-3 py-2 bg-bg-secondary border-b border-border text-xs font-medium text-text-muted uppercase tracking-wide;
+  }
+
+  .file-item {
+    @apply flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-border/30 text-sm;
+    @apply hover:bg-bg-hover;
+  }
+
+  .file-item.selected {
+    @apply bg-bg-tertiary;
+  }
+
+  .file-grid-item {
+    @apply flex flex-col items-center p-3 rounded cursor-pointer gap-2;
+    @apply hover:bg-bg-hover;
+  }
+
+  .file-grid-item.selected {
+    @apply bg-bg-tertiary;
+  }
+
+  .btn {
+    @apply px-3 py-1.5 rounded text-sm font-medium transition-colors;
+    @apply bg-bg-tertiary text-text-primary;
+    @apply hover:bg-bg-hover;
+    @apply active:bg-bg-active;
+  }
+
+  .btn-primary {
+    @apply btn;
+    @apply bg-accent text-white;
+    @apply hover:bg-accent-hover;
+    @apply active:bg-accent-active;
+  }
+
+  .btn-icon {
+    @apply p-2 rounded text-text-secondary;
+    @apply hover:text-text-primary hover:bg-bg-hover;
+  }
+
+  .input {
+    @apply px-3 py-1.5 bg-bg-primary border border-border rounded text-sm;
+    @apply focus:outline-none focus:border-accent;
+    @apply placeholder:text-text-muted;
+  }
+
+  .context-menu {
+    @apply fixed z-50 min-w-[180px] bg-bg-secondary border border-border rounded py-1;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .context-item {
+    @apply w-full px-3 py-2 flex items-center gap-2 text-sm text-text-primary;
+    @apply hover:bg-bg-hover;
+  }
+
+  .context-separator {
+    @apply h-px bg-border my-1 mx-2;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50;
+  }
+
+  .modal {
+    @apply bg-bg-secondary border border-border rounded-lg p-6 w-96;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .tab {
+    @apply px-3 py-2 text-sm font-medium text-text-muted;
+    @apply hover:text-text-primary;
+    @apply border-b-2 border-transparent;
+  }
+
+  .tab.active {
+    @apply text-accent border-accent;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(51, 51, 51, 0.4) transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  .scrollbar-thin:hover {
+    scrollbar-color: rgba(68, 68, 68, 0.7) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(51, 51, 51, 0.4);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background: rgba(68, 68, 68, 0.7);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(85, 85, 85, 0.8);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:active {
+    background: rgba(59, 130, 246, 0.6);
+  }
+}
+
+.neon-code {
+  @apply bg-bg-primary rounded border border-border p-3 overflow-auto text-xs font-mono;
+}
+
+.neon-code pre {
+  @apply m-0 text-text-secondary whitespace-pre-wrap break-all;
+}
