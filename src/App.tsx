@@ -1,51 +1,119 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+type DirEntry = {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  is_symlink: boolean;
+  size: number | null;
+  modified_ms: number | null;
+};
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+export default function App() {
+  const [path, setPath] = useState<string>("");
+  const [entries, setEntries] = useState<DirEntry[]>([]);
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  const gen = useRef(0);
+
+  const openDir = useCallback(async (next: string) => {
+    const id = ++gen.current;
+    setLoading(true);
+    setError("");
+    try {
+      const list = await invoke<DirEntry[]>("list_dir", { path: next });
+      if (id !== gen.current) return; // stale
+      setPath(next);
+      setEntries(list);
+    } catch (e) {
+      if (id !== gen.current) return;
+      setError(String(e));
+    } finally {
+      if (id === gen.current) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const home = await invoke<string>("home_dir");
+      if (!cancelled) openDir(home);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openDir]);
+
+  useEffect(() => {
+    invoke<string>("home_dir").then(openDir).catch((e) => setError(String(e)));
+  }, [openDir]);
+
+  async function goUp() {
+    const parent = await invoke<string | null>("parent_dir", { path });
+    if (parent) openDir(parent);
   }
 
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 28,
+    overscan: 12,
+  });
+
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <main>
+      <div>
+        <button type="button" onClick={goUp} disabled={!path}>
+          Up
+        </button>
+        <span> {path}</span>
+        {loading ? <span> …</span> : null}
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
+      {error ? <pre>{error}</pre> : null}
+      <div
+        ref={parentRef}
+        style={{ height: "80vh", overflow: "auto" }}
       >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+        <div
+          style={{
+            height: virtualizer.getTotalSize(),
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((v) => {
+            const e = entries[v.index];
+            return (
+              <div
+                key={e.path}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: v.size,
+                  transform: `translateY(${v.start}px)`,
+                }}
+              >
+                {e.is_dir ? (
+                  <button type="button" onClick={() => openDir(e.path)}>
+                    [{e.name}]
+                  </button>
+                ) : (
+                  <span>
+                    {e.name}
+                    {e.size != null ? `  ${e.size}` : ""}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
     </main>
   );
 }
-
-export default App;
